@@ -84,6 +84,7 @@ Command _$CommandFromJson(Map<String, dynamic> json) => Command(
       (json['totalPrice'] as num).toDouble(),
       json['currency'] as String,
       json['isDelivered'] as bool,
+      json['isInProgress'] as bool,
       (json['clientId'] as num).toInt(),
       (json['deliveryManId'] as num?)?.toInt(),
     );
@@ -96,6 +97,7 @@ Map<String, dynamic> _$CommandToJson(Command instance) => <String, dynamic>{
       'totalPrice': instance.totalPrice,
       'currency': instance.currency,
       'isDelivered': instance.isDelivered,
+      'isInProgress': instance.isInProgress,
       'clientId': instance.clientId,
       'deliveryManId': instance.deliveryManId,
     };

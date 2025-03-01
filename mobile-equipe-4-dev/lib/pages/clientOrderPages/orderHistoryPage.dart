@@ -4,8 +4,10 @@ import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/clientOrderPages/commandDetailsPage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarDelivery.dart';
+import '../../services/Chat/chat_service.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/navbarWidgets/navBarNotDelivery.dart';
+import '../chatPage/chat_bubble.dart';
 import '../deliverymanOrderPages/availableDeliveryDetailPage.dart';
 
 class OrderHistoryPage extends StatefulWidget {
@@ -184,6 +186,61 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+extension OrderHistoryPageChatExtension on _OrderHistoryPageState {
+  // New method to build the page with chat bubble
+  Widget buildBodyWithChat() {
+    // Keep the original body
+    Widget originalBody = buildBody();
+
+    // Add floating chat bubbles for in-progress deliveries
+    return Stack(
+      children: [
+        originalBody,
+        // Add chat bubbles for all in-progress deliveries
+        ...listCommandes
+            .where((command) => command.isInProgress && !command.isDelivered)
+            .map((command) => _buildChatBubbleForCommand(command))
+            .toList(),
+      ],
+    );
+  }
+
+  // Helper method to build a chat bubble for a specific command
+  Widget _buildChatBubbleForCommand(Command command) {
+    // Check if chat is active before displaying bubble
+    return FutureBuilder<bool>(
+      future: ChatService().isChatActive(command.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done &&
+            snapshot.data == true) {
+          return ChatBubble(
+            commandId: command.id,
+            otherUserId: command.deliveryManId ?? 0,
+            otherUserName: "Livreur", // Replace with actual name if available
+            isDeliveryMan: false, // This is client view
+          );
+        }
+        // Don't show bubble if chat isn't active
+        return SizedBox.shrink();
+      },
+    );
+  }
+
+  // Override the build method in the original page
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: 'Mes commandes',
+        centerTitle: true,
+        backgroundColor: Colors.white,
+      ),
+      body: buildBodyWithChat(),
+      backgroundColor: Colors.white,
     );
   }
 }

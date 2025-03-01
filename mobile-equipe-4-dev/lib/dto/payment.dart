@@ -96,7 +96,7 @@ class CommandSuccessDTO {
 
 @JsonSerializable()
 class Command{
-  Command(this.id, this.commandNumber,this.clientPhoneNumber,this.arrivalPoint,this.totalPrice,this.currency,this.isDelivered,this.clientId, this.deliveryManId);
+  Command(this.id, this.commandNumber,this.clientPhoneNumber,this.arrivalPoint,this.totalPrice,this.currency,this.isDelivered, this.isInProgress,this.clientId, this.deliveryManId);
 
   int id;
   int commandNumber;
@@ -105,6 +105,7 @@ class Command{
   double totalPrice;
   String currency;
   bool isDelivered;
+  bool isInProgress;
   int clientId;
   int? deliveryManId;
 

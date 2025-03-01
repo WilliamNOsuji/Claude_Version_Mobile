@@ -78,3 +78,61 @@ class _AvailableDeliveryDetailPageState extends State<AvailableDeliveryDetailPag
     }
   }
 }
+
+extension AvailableDeliveryDetailPageChatExtension on _AvailableDeliveryDetailPageState {
+  // Enhanced method to handle assignment and chat initialization
+  Future<void> assignDeliveryWithChat(int commandId) async {
+    try {
+      // First assign the delivery
+      var result = await ApiService().assignADelivery(commandId);
+
+      // Then mark it as in progress to initialize chat
+      await ApiService().markCommandInProgress(commandId);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Assigned Successfully. Chat is now available.")),
+      );
+
+      // Navigate as usual
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AvailableOrdersPage(),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to assign delivery: $e')),
+      );
+    }
+  }
+
+  // We need to modify the button press handler
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Order Details'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Original UI elements...
+
+            ElevatedButton(
+              onPressed: () async {
+                // Use our new enhanced method instead
+                await assignDeliveryWithChat(widget.order.id);
+              },
+              child: Text('Assign & Start Chat'),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: ApiService.isDelivery ? navBarFloatingYesDelivery(context, 2, setState) : null,
+    );
+  }
+}

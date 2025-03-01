@@ -10,14 +10,16 @@ import '../dto/auth.dart';
 import '../dto/payment.dart';
 import '../gestion_erreurs.dart';
 import '../models/product_model.dart';
+import '../pages/clientOrderPages/orderHistoryPage.dart';
 import '../pages/paymentProcessPages/order_success_page.dart';
+import 'Chat/chat_service.dart';
 import 'auth_service.dart';
 
 //Web
-const String BaseUrl ="http://127.0.0.1:5180";
+//const String BaseUrl ="http://127.0.0.1:5180";
 
 // Mobile
-//const String BaseUrlLocal= "http://10.0.2.2:5180";
+const String BaseUrl= "http://10.0.2.2:5180";
 
 // Deployed
 //const String BaseUrl ="https://api-lapincouvert-hke0a0a6cjg5c3gh.canadacentral-01.azurewebsites.net";
@@ -559,6 +561,63 @@ class ApiService {
     } on DioException catch (e) {
       print("Error posting vote: $e");
       throw e;
+    }
+  }
+
+
+  /***
+   * The following is my implementation of the chat functionnality bayybay
+   */
+
+  Future<void> markCommandInProgress(int commandId) async {
+    try {
+      final response = await  _dio.get('/api/Commands/DeliveryInProgress/$commandId');
+
+      if (response.statusCode == 200) {
+        // When command is marked in progress, initialize the chat
+        // Get current user info
+        final currentUserId = ApiService.clientId;
+
+        // We need to retrieve the command to get client and delivery person IDs
+        final command = await getCommandById(commandId);
+
+        if (command != null) {
+          final ChatService chatService = ChatService();
+
+          // Create or activate chat
+          await chatService.createChat(
+            commandId,
+            command.clientId,
+            command.deliveryManId ?? currentUserId,
+          );
+        }
+      }
+    } catch (e) {
+      throw Exception('Failed to mark command in progress: $e');
+    }
+  }
+
+  // New method to get a specific command by ID
+  Future<Command?> getCommandById(int commandId) async {
+    try {
+      final response = await _dio.get('/api/Commands/GetCommand/$commandId');
+
+      if (response.statusCode == 200) {
+        return Command.fromJson(response.data);
+      }
+    } catch (e) {
+      print('Failed to get command: $e');
+    }
+    return null;
+  }
+
+  // Helper method to end chat when a delivery is completed
+  Future<void> endChatOnDeliveryComplete(int commandId) async {
+    try {
+      final ChatService chatService = ChatService();
+      await chatService.endChat(commandId);
+    } catch (e) {
+      print('Failed to end chat: $e');
     }
   }
 }

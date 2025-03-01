@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import '../../dto/payment.dart';
+import '../../services/Chat/chat_service.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/navbarWidgets/navBarDelivery.dart';
 import '../../widgets/navbarWidgets/navBarNotDelivery.dart';
+import '../chatPage/chat_bubble.dart';
 import '../clientOrderPages/commandDetailsPage.dart';
 import 'availableOrdersPage.dart';
 
@@ -50,6 +52,19 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Échec de la marque comme livré: $e')),
+      );
+    }
+  }
+
+  Future<void> markCommandInProgress(int commandId) async {
+    try {
+      await ApiService().markCommandInProgress(commandId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Livraison est a effectuer")), // Afficher un message de succès
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Échec de la marque comme en etat de progress: $e')),
       );
     }
   }
@@ -132,8 +147,19 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+
                         // Conditionally render the "Livrer" and "Annuler" buttons
                         if (!delivery.isDelivered) ...[
+
+                          ElevatedButton(
+                            onPressed: () {
+                              markCommandInProgress(delivery.id);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                            child: Text('Commencer'),
+                          ),
                           ElevatedButton(
                             onPressed: () {
                               markAsDelivered(delivery.id);
@@ -178,5 +204,62 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
             SizedBox() :
             navBarFloatingYesDelivery(context, 2, setState))
     ]);
+  }
+
+
+}
+
+extension DeliveriesListPageChatExtension on _DeliveriesListPageState {
+  // New method to build the page with chat bubble
+  Widget buildBodyWithChat() {
+    // Keep the original body
+    Widget originalBody = buildBody();
+
+    // Add floating chat bubbles for in-progress deliveries
+    return Stack(
+      children: [
+        originalBody,
+        // Add chat bubbles for all in-progress deliveries
+        ...myDeliveries
+            .where((command) => command.isInProgress && !command.isDelivered)
+            .map((command) => _buildChatBubbleForCommand(command))
+            .toList(),
+      ],
+    );
+  }
+
+  // Helper method to build a chat bubble for a specific command
+  Widget _buildChatBubbleForCommand(Command command) {
+    // Check if chat is active before displaying bubble
+    return FutureBuilder<bool>(
+      future: ChatService().isChatActive(command.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done &&
+            snapshot.data == true) {
+          return ChatBubble(
+            commandId: command.id,
+            otherUserId: command.clientId,
+            otherUserName: "Client", // Get client name if available
+            isDeliveryMan: true, // This is delivery person view
+          );
+        }
+        // Don't show bubble if chat isn't active
+        return SizedBox.shrink();
+      },
+    );
+  }
+
+  // Override the build method in the original page
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: "Mes livraisons",
+        centerTitle: true,
+        backgroundColor: Colors.white,
+      ),
+      body: buildBodyWithChat(),
+      backgroundColor: Colors.white,
+    );
   }
 }
