@@ -1,0 +1,49 @@
+{
+  "connexionPageTitle" : "Se Connecter",
+  "registerPageTitle" : "Créer un compte",
+
+
+  "labelUsername" : "Nom d'utilisateur",
+  "labelPassword" : "Mot de passe",
+  "labelConfirmPassword" : "Confirmer votre mot de passe",
+  "labelEmail" : "Email",
+  "labelHome": "Accueil",
+  "labelcart": "Panier",
+  "labelProfil": "Profil",
+  "labelFirstName": "Prénom",
+  "labelLastName": "Nom de famille",
+  "labelCommand" : "Commands",
+  "labelDelivery" : "Livraison",
+  "labelRegister" : "Register",
+  "labelNewPassord": "Nouveau Mot de passe",
+  "labelOldPassord": "Ancien Mot de passe",
+
+
+  "buttonConnexion" : "Connexion",
+  "buttonCreateAccont" : "Créer un compte",
+
+  "labelIDNumber" : "Matricule",
+  "hintUsernameTF": "Entrez votre nom d\\'utilisateur",
+  "hintPasswordTF": "Entrez votre mot de passe",
+  "saveChangeButton": "Enregistrer",
+  "cancelButton": "Annuler",
+  "modifyProfileSnackBar": "Profile modifié",
+
+  "errorUsernameEmpty": "Username empty",
+  "errorUsernameLength": "Username needs to be more than 3 characters",
+  "errorRegisterPasswordsEmpty": "One of the password fields are emtpy",
+  "errorPasswordShort": "The password is too short",
+  "errorPasswordMaxLength": "Password need to have 40 character or less",
+  "errorPasswordNotTheSame": "Password and confirmed password arent the same",
+  "errorSignInPasswordEmpty": "the password field is emtpy",
+  "errorSignInUsername": "Username or password invalid",
+  "errorFirstName": "First name is empty",
+  "errorFirstNameLength": "First name needs to be at least 2 characters",
+  "errorLastName": "Last name is empty",
+  "errorLastNameLength": "Last name needs to be at least 2 characters",
+
+  "searchBarHint": "Search",
+  "noStockWidget": "Sold out",
+
+  "noSuggestedProducts": "There are no suggested products"
+}

@@ -1,0 +1,63 @@
+name: mobilelapincouvert
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.1
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  dio: ^5.7.0
+  dio_cookie_manager: ^3.1.1
+  cookie_jar: ^4.0.8
+  http: ^1.3.0
+  flutter_form_builder: ^9.7.0
+  form_builder_validators: ^11.1.1
+  easy_stepper: ^0.8.5+1
+  flutter_swipe_button: ^2.1.3
+  flutter_stripe: ^11.4.0
+  flutter_dotenv: ^5.2.1
+  pay: ^3.1.0
+  dotted_line: ^3.2.3
+  checkout_screen_ui: ^1.0.1
+  lottie: ^3.3.1
+  google_fonts: ^6.2.1
+  foundation: ^0.0.5
+  json_annotation: ^4.9.0
+  shared_preferences: ^2.2.0
+  provider: ^6.1.2
+  shimmer: ^3.0.0
+  badges: ^3.1.2
+  firebase_messaging: ^15.2.2
+  firebase_core: ^3.11.0
+  flutter_local_notifications: ^18.0.1
+  image_picker: ^1.1.2
+  supabase_flutter: ^2.8.3
+  flutter_floating_bottom_bar: ^1.2.1+1
+
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.14
+  json_serializable: ^6.9.3
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
+    - assets/animations/jumping_rabbit.json
+    - assets/animations/noOrderClient.json
+    - assets/images/placeholder_image.webp
+    - assets/images/profile_picture.webp
+    - assets/images/deliveryRabbit.jpg
+    - assets/animations/rabbit_animation.json
+    - assets/images/snacks_image.jpg
+    - assets/animations/pas_de_suggestions.json
+flutter_intl:
+  enabled: true
+
+

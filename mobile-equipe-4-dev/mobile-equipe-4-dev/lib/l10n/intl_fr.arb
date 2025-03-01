@@ -1,0 +1,51 @@
+{
+  "connexionPageTitle" : "Se Connecter",
+  "registerPageTitle" : "Créer un compte",
+
+
+
+  "labelUsername" : "Nom d'utilisateur",
+  "labelPassword" : "Mot de passe",
+  "labelConfirmPassword" : "Confirmer votre mot de passe",
+  "labelEmail" : "Email",
+  "labelHome": "Accueil",
+  "labelcart": "Panier",
+  "labelProfil": "Profil",
+  "labelFirstName": "Prénom",
+  "labelLastName": "Nom de famille",
+  "labelCommand" : "Commandes",
+  "labelDelivery" : "Livraison",
+  "labelRegister" : "S'inscrire",
+  "labelNewPassord": "Nouveau Mot de passe",
+  "labelOldPassord": "Ancien Mot de passe",
+
+
+
+  "buttonConnexion" : "Connexion",
+  "buttonCreateAccont" : "Créer votre compte",
+
+  "labelIDNumber" : "Matricule",
+  "hintUsernameTF": "Entrez votre nom d\\'utilisateur",
+  "hintPasswordTF": "Entrez votre mot de passe",
+  "saveChangeButton": "Enregistrer",
+  "cancelButton": "Annuler",
+  "modifyProfileSnackBar": "Profile modifié",
+
+  "errorUsernameEmpty": "Nom d'utilisateur vide",
+  "errorUsernameLength": "Le nom d'utilisateur doit contenir plus de 3 caractères",
+  "errorRegisterPasswordsEmpty": "Un des champs de mot de passe est vide",
+  "errorPasswordShort": "Le mot de passe est trop court",
+  "errorPasswordMaxLength": "Le mot de passe doit comporter 40 caractères ou moins",
+  "errorPasswordNotTheSame": "Le mot de passe et le mot de passe confirmé ne sont pas identiques",
+  "errorSignInPasswordEmpty": "Le champ du mot de passe est vide",
+  "errorSignInUsername": "Nom d'utilisateur ou mot de passe invalide",
+  "errorFirstName": "Le prénom est vide",
+  "errorFirstNameLength": "Le prénom doit contenir au moins 2 caractères",
+  "errorLastName": "Le nom est vide",
+  "errorLastNameLength": "Le nom doit contenir au moins 2 caractères",
+
+  "searchBarHint": "Rechercher",
+  "noStockWidget": "Épuisé",
+
+  "noSuggestedProducts": "Il n'y a pas de produits suggérés"
+}
