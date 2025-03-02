@@ -6,11 +6,11 @@ import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/dto/auth.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
 import 'package:mobilelapincouvert/services/auth_service.dart';
-import 'package:mobilelapincouvert/web_pages/web_login_page.dart';
 
 import '../../generated/l10n.dart';
 import '../../gestion_erreurs.dart';
 import '../../services/api_service.dart';
+import '../../web_interface/pages/web_login_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -18,7 +18,6 @@ class LoginPage extends StatefulWidget {
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
-
 final TextEditingController username_controller = TextEditingController();
 final TextEditingController password_controller = TextEditingController();
 GlobalKey<FormState> formkey = GlobalKey<FormState>();
@@ -30,7 +29,6 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: kIsWeb ? WebLoginPage() : buildBody(),
-     // backgroundColor: Color(0xFF2AB24A)
       backgroundColor: Colors.white,
     );
   }

@@ -77,22 +77,23 @@ class DeliveryManDTO {
 
   Map<String, dynamic> toJson() => _$DeliveryManDTOToJson(this);
 }
-/*
+
 @JsonSerializable()
-class CommandSuccessDTO {
-  CommandSuccessDTO(this.totalPrice, this.currency, this.address, this.phoneNumber, this.commandNumber, this.deliveryId);
+class CheckoutSessionRequest {
+  CheckoutSessionRequest(this.totalPrice, this.currency, this.address, this.phoneNum, this.deviceTokens, this.successUrl, this.cancelUrl);
 
   double totalPrice;
   String currency;
   String address;
-  String phoneNumber;
-  String commandNumber;
-  int? deliveryId;
+  String phoneNum;
+  List<String> deviceTokens;
+  String successUrl;
+  String cancelUrl;
 
-  factory CommandSuccessDTO.fromJson(Map<String, dynamic> json) => _$CommandSuccessDTOFromJson(json);
+  factory CheckoutSessionRequest.fromJson(Map<String, dynamic> json) => _$CheckoutSessionRequestFromJson(json);
 
-  Map<String, dynamic> toJson() => _$CommandSuccessDTOToJson(this);
-} */
+  Map<String, dynamic> toJson() => _$CheckoutSessionRequestToJson(this);
+}
 
 @JsonSerializable()
 class Command{

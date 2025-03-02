@@ -1,18 +1,17 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
+import 'package:lottie/lottie.dart';
+import 'package:mobilelapincouvert/pages/ProductDetailPage.dart';
 import 'package:mobilelapincouvert/pages/suggestion_page.dart';
 import 'package:mobilelapincouvert/services/auth_service.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_product_detail_page.dart';
+import 'package:mobilelapincouvert/web_interface/widgets/custom_app_bar.dart';
+import 'package:mobilelapincouvert/web_interface/widgets/drawerCart.dart';
 import 'package:mobilelapincouvert/widgets/loadingPages/loading_homepage.dart';
-import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarNotDelivery.dart';
-import '../generated/l10n.dart';
-import '../models/product_model.dart';
-import '../pages/ProductDetailPage.dart';
-import '../models/colors.dart';
-import '../widgets/custom_app_bar.dart';
-import '../services/api_service.dart';
-import '../widgets/navbarWidgets/navBarDelivery.dart';
-
+import '../../dto/auth.dart';
+import '../../generated/l10n.dart';
+import '../../models/product_model.dart';
+import '../../models/colors.dart';
+import '../../services/api_service.dart';
 
 class WebHomePage extends StatefulWidget {
   const WebHomePage({super.key});
@@ -36,12 +35,13 @@ class _WebHomePageState extends State<WebHomePage> {
   bool isLoading = true; // Loading state
   String? selectedCategory;
   List<String> categories = [];
-
+  List<CartProductDTO> listeCartProducts = [];
   @override
   void initState() {
     super.initState();
     var token = AuthService.getToken();
     fetchProducts(token);
+    fetchCartProducts();
   }
 
   @override
@@ -80,100 +80,113 @@ class _WebHomePageState extends State<WebHomePage> {
       setState(() => isLoading = false);
     }
   }
+  Future<void> fetchCartProducts() async {
+    try{
+      var token = AuthService.getToken();
+      List<CartProductDTO> response = await ApiService().getCartProducts(token, ApiService.clientId);
+      listeCartProducts = response;
+    }catch (Exception){
+
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: CustomAppBar(
-        title: S.of(context).labelHome,
-        centerTitle: true,
-        backgroundColor: Colors.white,
-      ),
+      endDrawer: LeTiroir(),
+      appBar: WebCustomAppBar(),
+      extendBodyBehindAppBar: true,
       body: isLoading ? shimmerHomePage(context, setState) : buidBody(),
     );
   }
 
   Widget buidBody() {
-    return Stack(
-      children: [
-        SingleChildScrollView(
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      child: Center(
+        child: Container(
+          alignment: Alignment.center,
+          width: MediaQuery.of(context).size.width * 0.7,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Gradient Banner Section
-              // Gradient Banner Section with Enhanced Design
               Container(
                 width: double.infinity,
-                height: 240,
+                height: 350,
                 margin: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(25),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      spreadRadius: 2,
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
+                  border: Border(),
+          
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(25),
                   child: Stack(
                     children: [
-                      // Background Image
-                      Image.asset(
-                        "assets/images/snacks_image.jpg",
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-
-                      // Gradient Overlay
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.6),
-                            ],
+                      Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(80.0,80,0,0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Votez pour vos collations favoris!',
+                                  style: TextStyle(
+                                    color: AppColors().green(),
+                                    fontSize: 45,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Inter',
+                                  ),
+                                ),
+                                SizedBox(height: 20,),
+                                // Subtitle
+                                Text(
+                                  'Parmi les sélections de collations dispoibles, votez pour la collation \nque vous voulez ajouter dans la liste des produits!',
+                                  style: TextStyle(
+                                    color: AppColors().green(),
+                                    fontSize: 25,
+                                    fontFamily: 'Inter',
+                                  ),
+                                ),
+          
+                                SizedBox(height: 20,),
+          
+                                ElevatedButton(
+                                  onPressed: () {},
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors().green(),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 110, vertical: 9),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  child:  Text(
+                                    'En savoir plus',
+                                    textAlign: TextAlign.center,
+          
+                                  ),
+                                )
+                              ],
+                            ),
                           ),
-                        ),
+                          Spacer(),
+                          Lottie.asset(
+                            'assets/animations/webAccueilAnimation.json', // Path to your Lottie JSON file
+                            height: 350,
+                            fit: BoxFit.cover,
+                          ),
+                          Spacer(),
+          
+          
+          
+                        ],
+          
                       ),
-
-                      // Text Overlay
-                      Positioned(
-                        left: 20,
-                        bottom: 20,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Title
-                            Text(
-                              'Votez pour des produits!',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                            // Subtitle
-                            Text(
-                              'Partagez votre avis sur nos prochains produits!',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 14,
-                                fontFamily: 'Inter',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
+          
                       // Decorative Icon
                       Positioned(
                         right: 20,
@@ -193,9 +206,9 @@ class _WebHomePageState extends State<WebHomePage> {
                                   builder: (context) => SuggestionPage(),
                                 ),
                               );
-
+          
                             },
-
+          
                           ),
                         ),
                       ),
@@ -203,27 +216,28 @@ class _WebHomePageState extends State<WebHomePage> {
                   ),
                 ),
               ),
+          
               // Categories Section (Horizontal Scroll)
-              Container(
+              SizedBox(
                 height: 50, // Adjust height as needed
-                margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: categories.length,
-                  itemBuilder: (context, index){
+                  physics: AlwaysScrollableScrollPhysics(), // Ensures scrolling works
+                  itemBuilder: (context, index) {
                     return GestureDetector(
                       child: Row(
                         children: [
                           _buildCategoryButton(categories[index]),
-                          SizedBox(width: 4)
+                          SizedBox(width: 4),
                         ],
                       ),
-                      onTap: (){
+                      onTap: () {
                         setState(() {
-                          if(selectedCategory != categories[index]){
+                          if (selectedCategory != categories[index]) {
                             selectedCategory = categories[index];
                             products = AllProducts.where((p) => p.category.name == categories[index]).toList();
-                          }else{
+                          } else {
                             selectedCategory = null;
                             products = AllProducts;
                           }
@@ -234,16 +248,16 @@ class _WebHomePageState extends State<WebHomePage> {
                 ),
               ),
 
+
               // Product Grid Section
               GridView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.fromLTRB(20, 20,20,20),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
+                  crossAxisCount: 4,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  childAspectRatio: 0.7,
                 ),
                 itemCount: products.length,
                 itemBuilder: (context, index) {
@@ -251,18 +265,12 @@ class _WebHomePageState extends State<WebHomePage> {
                   return _buildProductCard(product);
                 },
               )
-
-
+          
+          
             ],
           ),
         ),
-        Align(
-            alignment: Alignment.bottomCenter,
-            child: !ApiService.isDelivery ?
-            navBarFloatingNoDelivery(context, 0, setState) :
-            navBarFloatingYesDelivery(context, 0, setState))
-
-      ],
+      ),
     );
   }
 
@@ -362,7 +370,7 @@ class _WebHomePageState extends State<WebHomePage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(product: product),
+            builder: (context) => ProductDetailPage(product: product, ),
           ),
         );
       },
@@ -382,6 +390,7 @@ class _WebHomePageState extends State<WebHomePage> {
             ],
           ),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Product Image
@@ -392,15 +401,15 @@ class _WebHomePageState extends State<WebHomePage> {
                 ),
                 child: Image.network(
                   product.photo ?? 'https://placehold.co/180x180',
-                  height: 80,
+                  height: 150,
                   width: double.infinity,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                 ),
               ),
 
               // Product Details
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.fromLTRB(12,12,12,0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

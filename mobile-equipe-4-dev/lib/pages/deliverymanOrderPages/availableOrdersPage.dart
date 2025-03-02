@@ -5,7 +5,6 @@ import 'package:mobilelapincouvert/services/api_service.dart';
 import '../../dto/payment.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/navbarWidgets/navBarDelivery.dart';
-import '../../widgets/navbarWidgets/navBarNotDelivery.dart';
 import 'deliveriesListPage.dart';
 
 class AvailableOrdersPage extends StatefulWidget {

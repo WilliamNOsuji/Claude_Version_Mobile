@@ -1,13 +1,11 @@
-// lib/pages/chat/chat_page.dart
+// lib/pages/chatPage/chat_page.dart
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/models/chat_message.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
-import 'package:mobilelapincouvert/services/auth_service.dart';
-import 'package:mobilelapincouvert/services/Chat/chat_service.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
-
+import 'package:mobilelapincouvert/dto/payment.dart';
+import '../../services/chat_service.dart';
 import '../../widgets/widgetsChat/chat_input.dart';
 import '../../widgets/widgetsChat/chat_message_item.dart';
 
@@ -34,6 +32,8 @@ class _ChatPageState extends State<ChatPage> {
   final ScrollController _scrollController = ScrollController();
   late int _currentUserId;
   late SenderType _senderType;
+  Command? _command;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -42,9 +42,34 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _setupChat() async {
+    setState(() => _isLoading = true);
+
     // Set current user ID
     _currentUserId = ApiService.clientId;
     _senderType = widget.isDeliveryMan ? SenderType.deliveryMan : SenderType.client;
+
+    // Try to get command details
+    try {
+      _command = await ApiService().getCommandById(widget.commandId);
+    } catch (e) {
+      print('Error loading command details: $e');
+    }
+
+    // Ensure chat is initialized
+    try {
+      final clientId = widget.isDeliveryMan ? widget.otherUserId : _currentUserId;
+      final deliveryManId = widget.isDeliveryMan ? _currentUserId : widget.otherUserId;
+
+      await _chatService.initializeChat(
+          widget.commandId,
+          clientId,
+          deliveryManId
+      );
+    } catch (e) {
+      print('Error initializing chat: $e');
+    }
+
+    setState(() => _isLoading = false);
   }
 
   void _scrollToBottom() {
@@ -55,6 +80,43 @@ class _ChatPageState extends State<ChatPage> {
         curve: Curves.easeOut,
       );
     }
+  }
+
+  void _showOrderDetails() {
+    if (_command == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Command details not available')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Order #${_command!.commandNumber}'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Status: ${_command!.isDelivered ? "Delivered" : "In progress"}'),
+              SizedBox(height: 8),
+              Text('Delivery address: ${_command!.arrivalPoint}'),
+              SizedBox(height: 8),
+              Text('Total: ${_command!.totalPrice.toStringAsFixed(2)} ${_command!.currency}'),
+              SizedBox(height: 8),
+              Text('Phone: ${_command!.clientPhoneNumber}'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -91,47 +153,26 @@ class _ChatPageState extends State<ChatPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.info_outline),
-            onPressed: () {
-              // Show dialog with delivery details
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text('Détails de la commande'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Commande #${widget.commandId}'),
-                      SizedBox(height: 8),
-                      // Add more delivery details as needed
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Fermer'),
-                    ),
-                  ],
-                ),
-              );
-            },
+            onPressed: _showOrderDetails,
           ),
         ],
       ),
-      body: Column(
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : Column(
         children: [
           // Chat messages
           Expanded(
             child: StreamBuilder<List<ChatMessage>>(
               stream: _chatService.getMessagesStream(widget.commandId),
               builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
                   return Center(child: CircularProgressIndicator());
                 }
 
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text('Erreur: ${snapshot.error}'),
+                    child: Text('Error: ${snapshot.error}'),
                   );
                 }
 
@@ -157,6 +198,29 @@ class _ChatPageState extends State<ChatPage> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final message = messages[index];
+
+                    // Handle system messages differently
+                    if (message.senderId == "system") {
+                      return Center(
+                        child: Container(
+                          margin: EdgeInsets.symmetric(vertical: 8),
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            message.content,
+                            style: TextStyle(
+                              color: Colors.grey[800],
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
                     return ChatMessageItem(
                       message: message,
                       currentUserId: _currentUserId.toString(),
@@ -220,4 +284,3 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 }
-

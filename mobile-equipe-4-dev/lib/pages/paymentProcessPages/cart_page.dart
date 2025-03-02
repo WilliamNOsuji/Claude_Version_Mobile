@@ -148,14 +148,17 @@ class _CartPageState extends State<CartPage> {
                                 icon: Icon(Icons.add, color: AppColors().green()),
                                 onPressed: () async {
                                   // Increase quantity logic
-                                  await ApiService().addQuantityCartProducts(
-                                      context,
-                                      item.productId,
-                                      ApiService.clientId);
-                                  setState(() {
-                                    item.quantity++; // Increase the quantity locally and trigger rebuild
-                                    item.isOutofBound = item.quantity > item.maxQuantity;
-                                  });
+                                  if(!item.isOutofBound){
+                                    await ApiService().addQuantityCartProducts(
+                                        context,
+                                        item.productId,
+                                        ApiService.clientId);
+                                    setState(() {
+                                      item.quantity++; // Increase the quantity locally and trigger rebuild
+                                      item.isOutofBound = item.quantity > item.maxQuantity;
+                                    });
+                                  }
+
                                 },
                               ),
                           ],

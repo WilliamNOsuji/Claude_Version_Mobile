@@ -1,10 +1,13 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:mobilelapincouvert/dto/vote.dart';
+import 'package:mobilelapincouvert/services/utilis/web_utilities.dart';
 
 import '../dto/auth.dart';
 import '../dto/payment.dart';
@@ -12,14 +15,15 @@ import '../gestion_erreurs.dart';
 import '../models/product_model.dart';
 import '../pages/clientOrderPages/orderHistoryPage.dart';
 import '../pages/paymentProcessPages/order_success_page.dart';
-import 'Chat/chat_service.dart';
+import 'chat_service.dart';
 import 'auth_service.dart';
+import 'local_storage_stripe_service.dart';
 
 //Web
-//const String BaseUrl ="http://127.0.0.1:5180";
+const String BaseUrl = kIsWeb ? "http://127.0.0.1:5180" : "http://10.0.2.2:5180";
 
 // Mobile
-const String BaseUrl= "http://10.0.2.2:5180";
+//const String BaseUrl= "http://10.0.2.2:5180";
 
 // Deployed
 //const String BaseUrl ="https://api-lapincouvert-hke0a0a6cjg5c3gh.canadacentral-01.azurewebsites.net";
@@ -368,7 +372,8 @@ class ApiService {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => OrderSuccessPage(commandSuccessDTO: commandSuccessDTO),
+              //builder: (context) => OrderSuccessPage(commandSuccessDTO: commandSuccessDTO),
+              builder: (context) => OrderSuccessPage(sessionId: '',),
             ),
           );
         }
@@ -450,16 +455,6 @@ class ApiService {
   Future<void> cancelADelivery (int commandId) async{
     try{
       var response = await _dio.get('/api/Commands/CancelADelivery/' + commandId.toString());
-      print(response.data);
-      return response.data;
-    }on DioException catch(e){
-      throw Exception();
-    }
-  }
-
-  Future<void> commandDelivered (int commandId) async{
-    try{
-      var response = await _dio.get('/api/Commands/CommandDelivered/' + commandId.toString());
       print(response.data);
       return response.data;
     }on DioException catch(e){
@@ -583,7 +578,7 @@ class ApiService {
         if (command != null) {
           final ChatService chatService = ChatService();
 
-          // Create or activate chat without worrying about authentication
+          // Create or activate chat
           await chatService.createChat(
             commandId,
             command.clientId,
@@ -597,7 +592,7 @@ class ApiService {
     }
   }
 
-  // New method to get a specific command by ID
+// New method to get a specific command by ID
   Future<Command?> getCommandById(int commandId) async {
     try {
       final response = await _dio.get('/api/Commands/GetCommand/$commandId');
@@ -611,6 +606,26 @@ class ApiService {
     return null;
   }
 
+// Helper method to end chat when a delivery is completed
+  Future<void> commandDelivered(int commandId) async {
+    try {
+      final response = await _dio.get('/api/Commands/CommandDelivered/$commandId');
+
+      if (response.statusCode == 200) {
+        // End the chat when delivery is complete
+        try {
+          final ChatService chatService = ChatService();
+          await chatService.endChat(commandId);
+        } catch (e) {
+          print('Error ending chat: $e');
+        }
+      }
+    } catch (e) {
+      print('Failed to mark as delivered: $e');
+      throw Exception('Failed to mark as delivered: $e');
+    }
+  }
+
   // Helper method to end chat when a delivery is completed
   Future<void> endChatOnDeliveryComplete(int commandId) async {
     try {
@@ -618,6 +633,105 @@ class ApiService {
       await chatService.endChat(commandId);
     } catch (e) {
       print('Failed to end chat: $e');
+    }
+  }
+  // Add these methods to your ApiService class
+
+  Future<String> getAuthToken() async {
+    return await AuthService.getToken() ?? '';
+  }
+
+  Future<bool> verifyStripePaymentStatus(String sessionId) async {
+    try {
+      var response = await _dio.get('/api/Stripe/VerifyPayment/$sessionId');
+
+      if (response.statusCode == 200) {
+        // Check the payment status from the response
+        final status = response.data['paymentStatus'];
+        return status == 'paid' || status == 'complete';
+      }
+      return false;
+    } on DioException catch (e) {
+      print('Failed to verify payment: $e');
+      return false;
+    }
+  }
+
+// Add this to handle web-specific payment flow
+  Future<void> processWebPayment(BuildContext context, List<CartProductDTO> cartProducts) async {
+    try {
+      // Step 1: Validate cart products
+      var validationResponse = await validateCartProducts(context, cartProducts);
+
+      if (validationResponse.toString() == "Le panier est valide") {
+        // Step 2: Create a Stripe checkout session
+        String? token = await FirebaseMessaging.instance.getToken();
+        List<String> tokens = token != null ? [token] : [];
+
+        CommandDTO commandDTO = CommandDTO(
+            address,
+            currency,
+            finalAmount,
+            phoneNum,
+            tokens
+        );
+
+        // Create a checkout session
+        var sessionResponse = await _dio.post(
+          '/api/Stripe/CreateCheckoutSession',
+          data: commandDTO.toJson(),
+        );
+
+        if (sessionResponse.statusCode == 200) {
+          // Get checkout URL from response
+          final sessionId = sessionResponse.data['id'];
+          final checkoutUrl = sessionResponse.data['url'];
+
+          // Open the checkout URL in a new tab
+          // This will handle the web workflow
+          WebUrlUtils.openUrl(checkoutUrl);
+
+          // Store the session ID for later verification
+          // You can save this to local storage or pass it to the success page
+          LocalStorageService.saveSessionId(sessionId);
+        }
+      }
+    } catch (e) {
+      print("Web payment initialization error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to initialize payment: $e')),
+      );
+    }
+  }
+
+  Future<void> verifyPaymentAndCreateCommand(String sessionId) async {
+    try {
+      print("Verifying payment with session ID: $sessionId");
+
+      // Call API to verify checkout session and create command
+      final response = await _dio.get(
+        '/api/Stripe/VerifyCheckoutSession/$sessionId',
+      );
+
+      print("Verify checkout response: ${response.data}");
+
+      if (response.statusCode == 200) {
+        // Extract command data from response
+        Command command = Command(
+          response.data['id'],
+          response.data['commandNumber'],
+          response.data['clientPhoneNumber'],
+          response.data['arrivalPoint'],
+          response.data['totalPrice'],
+          response.data['currency'],
+          response.data['isDelivered'],
+          response.data['isInProgress'],
+          response.data['clientId'],
+          response.data['deliveryManId'],
+        );
+      }
+    } catch (e) {
+      print('Payment verification error: $e');
     }
   }
 }

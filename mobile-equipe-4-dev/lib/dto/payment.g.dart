@@ -76,6 +76,30 @@ Map<String, dynamic> _$DeliveryManDTOToJson(DeliveryManDTO instance) =>
       'fullName': instance.fullName,
     };
 
+CheckoutSessionRequest _$CheckoutSessionRequestFromJson(
+        Map<String, dynamic> json) =>
+    CheckoutSessionRequest(
+      (json['totalPrice'] as num).toDouble(),
+      json['currency'] as String,
+      json['address'] as String,
+      json['phoneNum'] as String,
+      (json['deviceTokens'] as List<dynamic>).map((e) => e as String).toList(),
+      json['successUrl'] as String,
+      json['cancelUrl'] as String,
+    );
+
+Map<String, dynamic> _$CheckoutSessionRequestToJson(
+        CheckoutSessionRequest instance) =>
+    <String, dynamic>{
+      'totalPrice': instance.totalPrice,
+      'currency': instance.currency,
+      'address': instance.address,
+      'phoneNum': instance.phoneNum,
+      'deviceTokens': instance.deviceTokens,
+      'successUrl': instance.successUrl,
+      'cancelUrl': instance.cancelUrl,
+    };
+
 Command _$CommandFromJson(Map<String, dynamic> json) => Command(
       (json['id'] as num).toInt(),
       (json['commandNumber'] as num).toInt(),

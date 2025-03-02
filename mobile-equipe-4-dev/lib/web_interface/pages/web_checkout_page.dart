@@ -1,25 +1,22 @@
-// lib/pages/paymentProcessPages/checkout_page.dart
-import 'package:flutter/foundation.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/dto/auth.dart';
-import 'package:mobilelapincouvert/dto/payment.dart';
-import 'package:mobilelapincouvert/pages/paymentProcessPages/order_success_page.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import 'package:mobilelapincouvert/services/stripe_web_service.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_order_success_page.dart';
 import 'package:mobilelapincouvert/widgets/custom_app_bar.dart';
 import 'package:mobilelapincouvert/widgets/order_progress.dart';
+import 'package:mobilelapincouvert/pages/paymentProcessPages/order_success_page.dart';
 import '../../gestion_erreurs.dart';
 import '../../models/colors.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
-import '../../web_interface/pages/web_checkout_page.dart';
-
-class CheckoutPage extends StatefulWidget {
+class WebCheckoutPage extends StatefulWidget {
   final List<CartProductDTO> listCartProducts;
-  const CheckoutPage({super.key, required this.listCartProducts});
+  const WebCheckoutPage({super.key, required this.listCartProducts});
 
   @override
-  _CheckoutPageState createState() => _CheckoutPageState();
+  _WebCheckoutPageState createState() => _WebCheckoutPageState();
 }
 
 GlobalKey<FormState> formkey = GlobalKey<FormState>();
@@ -28,84 +25,13 @@ TextEditingController adress_controller = TextEditingController();
 TextEditingController phoneNumber_controller = TextEditingController();
 bool _isButtonDisabled = false;
 
-class _CheckoutPageState extends State<CheckoutPage> {
-  final StripeWebService _stripeWebService = StripeWebService();
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Check for Stripe payment return (web only)
-    if (kIsWeb) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _checkStripePaymentReturn();
-      });
-    }
-  }
-
-  void _checkStripePaymentReturn() {
-    if (!kIsWeb) return;
-
-    // Get current URL including hash fragment
-    final uri = Uri.parse(Uri.base.toString());
-    final path = uri.fragment; // Get the fragment part after #
-
-    if (path.startsWith('/order-success')) {
-      // Extract session ID from query parameters
-      final queryParams = Uri.parse(path).queryParameters;
-      final sessionId = queryParams['session_id'];
-
-      if (sessionId != null) {
-        _handleSuccessfulPayment(sessionId);
-      }
-    } else if (path.startsWith('/checkout')) {
-      // Handle cancelled payment case
-      final queryParams = Uri.parse(path).queryParameters;
-      if (queryParams['canceled'] == 'true') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Payment was cancelled')),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleSuccessfulPayment(String sessionId) async {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(child: CircularProgressIndicator()),
-    );
-
-    // Verify payment with backend
-    final command = await _stripeWebService.verifyPaymentSession(sessionId);
-
-    // Close loading dialog
-    Navigator.pop(context);
-
-    if (command != null) {
-      // Navigate to success page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OrderSuccessPage(sessionId: "",),
-        ),
-      );
-    } else {
-      // Show error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not verify payment. Please contact support.')),
-      );
-    }
-  }
-
+class _WebCheckoutPageState extends State<WebCheckoutPage> {
   @override
   Widget build(BuildContext context) {
-
-    return kIsWeb ? WebCheckoutPage(listCartProducts: widget.listCartProducts) : Scaffold(
-      appBar: CustomAppBar(title: 'Vérification', centerTitle: true),
-      backgroundColor: Colors.white,
-      bottomNavigationBar: bottomButton(),
+    return Scaffold(
+        appBar: CustomAppBar(title: 'Vérification', centerTitle: true),
+        backgroundColor: Colors.white,
+        bottomNavigationBar: bottomButton(),
         body: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28.0),
@@ -117,12 +43,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     CircleAvatar(
                       radius: 20,
                       backgroundColor: AppColors().red(),
-                      child: Icon(Icons.fastfood, size: 20, color: AppColors().white()),
+                      child: Icon(Icons.fastfood, size: 20, color: AppColors().white(),),
                     ),
                     SizedBox(width: 10),
                     Text(
                       "Mes produits",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors().black()),
+                      style:
+                      TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors().black()),
                     ),
                   ],
                 ),
@@ -134,20 +61,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   children: widget.listCartProducts.map((item) => ListTile(
-                    leading: SizedBox(height: 60, width: 60, child: Image.network(item.imageUrl, fit: BoxFit.contain)),
+                    leading: SizedBox(height: 60,width: 60, child: Image.network(item.imageUrl, fit: BoxFit.contain,)),
                     title: Text(item.name),
                     subtitle: Row(
                       children: [
                         Row(
                           children: [
-                            Text('Nbr: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text('Nbr: ', style: TextStyle(fontWeight: FontWeight.bold),),
                             Text(item.quantity.toString())
                           ],
                         ),
                         Text('  |  '),
                         Row(
                           children: [
-                            Text('Prix: ', style: TextStyle(fontWeight: FontWeight.bold)),
+                            Text('Prix: ', style: TextStyle(fontWeight: FontWeight.bold),),
                             Text('${(item.quantity * item.prix).toStringAsFixed(2)} \$')
                           ],
                         )
@@ -167,12 +94,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             CircleAvatar(
                               radius: 20,
                               backgroundColor: AppColors().green(),
-                              child: Icon(Icons.local_shipping, size: 20, color: AppColors().white()),
+                              child: Icon(Icons.local_shipping, size: 20, color: AppColors().white(),),
                             ),
                             SizedBox(width: 10),
                             Text(
                               "Mes informations",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors().black()),
+                              style:
+                              TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors().black()),
                             ),
                           ],
                         ),
@@ -254,7 +182,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             children: [
               const Text('Sous-total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               Text(
-                '\$${ApiService().calculateFinalTotal(widget.listCartProducts).toStringAsFixed(2)}',
+                '\$${ApiService().calculateFinalTotal(widget.listCartProducts).toStringAsFixed(2)}', // Display totalAmount
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
@@ -264,19 +192,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: _isButtonDisabled ? null : () async {
-                if (formkey.currentState!.validate()) {
+                if(formkey.currentState!.validate()) {
                   setState(() {
-                    _isButtonDisabled = true;
+                    _isButtonDisabled = true; // Disable the button
                   });
-
                   try {
                     ApiService.address = adress_controller.text;
                     ApiService.phoneNum = phoneNumber_controller.text;
 
-                    await ApiService().PaiementRequest(context, widget.listCartProducts);
+                    if (kIsWeb) {
+                      await _handleWebPayment();
+                    }
                   } finally {
                     setState(() {
-                      _isButtonDisabled = false;
+                      _isButtonDisabled = false; // Re-enable the button
                     });
                   }
                 }
@@ -297,5 +226,56 @@ class _CheckoutPageState extends State<CheckoutPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _handleWebPayment() async {
+    try {
+      // Validate cart products
+      var validationResponse = await ApiService().validateCartProducts(context, widget.listCartProducts);
+
+      if (validationResponse.toString() == "Le panier est valide") {
+        // Store form data in ApiService
+        ApiService.address = adress_controller.text;
+        ApiService.phoneNum = phoneNumber_controller.text;
+
+        // Get app base URL for success and cancel redirects
+        final baseUrl = Uri.base.origin;
+
+        // Create URLs with session_id parameter
+        // Stripe will replace {CHECKOUT_SESSION_ID} with the actual session ID
+        final successUrl = '$baseUrl/#/order-success?session_id={CHECKOUT_SESSION_ID}';
+        final cancelUrl = '$baseUrl/#/homepage';
+
+        // Get checkout session URL
+        final checkoutUrl = await StripeWebService().createCheckoutSession(
+          amount: ApiService().calculateFinalTotal(widget.listCartProducts),
+          currency: ApiService.currency,
+          address: ApiService.address,
+          phoneNum: ApiService.phoneNum,
+          deviceTokens: [],
+          successUrl: successUrl,
+          cancelUrl: cancelUrl,
+        );
+
+        if (checkoutUrl != null) {
+          // Redirect to Stripe Checkout
+          StripeWebService().redirectToCheckout(checkoutUrl);
+          print("Redirecting to Stripe: $checkoutUrl");
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to create checkout session. Please try again.')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(validationResponse.toString())),
+        );
+      }
+    } catch (e) {
+      print("Error in _handleWebPayment: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: ${e.toString()}')),
+      );
+    }
   }
 }

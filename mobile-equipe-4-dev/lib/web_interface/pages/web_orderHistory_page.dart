@@ -1,27 +1,23 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/clientOrderPages/commandDetailsPage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
-import 'package:mobilelapincouvert/web_interface/pages/web_orderHistory_page.dart';
+import 'package:mobilelapincouvert/web_interface/widgets/custom_app_bar.dart';
 import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarDelivery.dart';
-import '../../services/chat_service.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/navbarWidgets/navBarNotDelivery.dart';
-import '../chatPage/chat_bubble.dart';
-import '../deliverymanOrderPages/availableDeliveryDetailPage.dart';
 
-class OrderHistoryPage extends StatefulWidget {
-  const OrderHistoryPage({super.key});
+class WebOrderHistoryPage extends StatefulWidget {
+  const WebOrderHistoryPage({super.key});
 
   @override
-  State<OrderHistoryPage> createState() => _OrderHistoryPageState();
+  State<WebOrderHistoryPage> createState() => _WebOrderHistoryPageState();
 }
 
 List<Command> listCommandes = [];
 
-class _OrderHistoryPageState extends State<OrderHistoryPage> {
+class _WebOrderHistoryPageState extends State<WebOrderHistoryPage> {
   void fetchCommands() async {
     listCommandes = await ApiService().getClientCommads();
     setState(() {});
@@ -36,13 +32,9 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return kIsWeb ? WebOrderHistoryPage(): Scaffold(
-      appBar: CustomAppBar(
-        title: 'Mes commandes',
-        centerTitle: true,
-        backgroundColor: Colors.white,
-      ),
-      body: buildBodyWithChat(),
+    return Scaffold(
+      appBar: WebCustomAppBar(),
+      body: buildBody(),
       backgroundColor: Colors.white,
     );
   }
@@ -53,40 +45,42 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         padding: const EdgeInsets.all(12.0),
         child: listCommandes.length > 0
             ? ListView.builder(
-                itemCount: listCommandes.length,
-                itemBuilder: (context, index) {
-                  return _buildCardCommande(listCommandes[index], context);
-                },
-              )
+          itemCount: listCommandes.length,
+          itemBuilder: (context, index) {
+            return _buildCardCommande(listCommandes[index], context);
+          },
+        )
             : Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Center(child:
-                  Column(
-                    children: [
-                      Lottie.asset(
-                        'assets/animations/noOrderClient.json', // Path to your Lottie JSON file
-                        width: 160, // Adjust size as needed
-                        height: 160,
-                        fit: BoxFit.cover,
-                      ),
-                      Text("Vous n'avez jamais commandé.",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Inter',
-                        ),),
-                    ],
-                  )),
-                ],
-              ),
+
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text("Vos commandes",style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Inter'),),
+            ),
+            Center(child:
+            Column(
+
+
+              children: [
+                Lottie.asset(
+                  'assets/animations/noOrderClient.json', // Path to your Lottie JSON file
+                  width: 300, // Adjust size as needed
+                  fit: BoxFit.cover,
+                ),
+                Text("Vous n'avez jamais commandé.",
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Inter',
+                  ),),
+              ],
+            )),
+          ],
+        ),
       ),
-      Align(
-          alignment: Alignment.bottomCenter,
-          child: !ApiService.isDelivery ?
-          navBarFloatingNoDelivery(context, 2, setState) :
-          navBarFloatingYesDelivery(context, 3, setState))
     ]);
   }
 
@@ -120,7 +114,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                     Text(
                       'ID Commande: ${commande.commandNumber}',
                       style:
-                          TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                      TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
                     ),
                     Row(
                       children: [
@@ -160,7 +154,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         Text(
                           'Fontion à vénir',
                           style:
-                              TextStyle(color: Colors.grey[600], fontSize: 12),
+                          TextStyle(color: Colors.grey[600], fontSize: 12),
                         ),
                       ],
                     ),
@@ -188,61 +182,6 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-extension OrderHistoryPageChatExtension on _OrderHistoryPageState {
-  // New method to build the page with chat bubble
-  Widget buildBodyWithChat() {
-    // Keep the original body
-    Widget originalBody = buildBody();
-
-    // Add floating chat bubbles for in-progress deliveries
-    return Stack(
-      children: [
-        originalBody,
-        // Add chat bubbles for all in-progress deliveries
-        ...listCommandes
-            .where((command) => command.isInProgress && !command.isDelivered)
-            .map((command) => _buildChatBubbleForCommand(command))
-            .toList(),
-      ],
-    );
-  }
-
-  // Helper method to build a chat bubble for a specific command
-  Widget _buildChatBubbleForCommand(Command command) {
-    // Check if chat is active before displaying bubble
-    return FutureBuilder<bool>(
-      future: ChatService().isChatActive(command.id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done &&
-            snapshot.data == true) {
-          return ChatBubble(
-            commandId: command.id,
-            otherUserId: command.deliveryManId ?? 0,
-            otherUserName: "Livreur", // Replace with actual name if available
-            isDeliveryMan: false, // This is client view
-          );
-        }
-        // Don't show bubble if chat isn't active
-        return SizedBox.shrink();
-      },
-    );
-  }
-
-  // Override the build method in the original page
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Mes commandes',
-        centerTitle: true,
-        backgroundColor: Colors.white,
-      ),
-      body: buildBodyWithChat(),
-      backgroundColor: Colors.white,
     );
   }
 }

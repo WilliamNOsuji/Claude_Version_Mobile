@@ -1,6 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:mobilelapincouvert/pages/HomePage.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_product_detail_page.dart';
 import '../models/product_model.dart';
 import '../services/api_service.dart';
 
@@ -15,7 +16,7 @@ class ProductDetailPage extends StatefulWidget {
 class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return kIsWeb ? WebProductDetailPage(product: widget.product) : Scaffold(
       appBar: AppBar(
         //title: Text(product.name),
         backgroundColor: AppColors().white(),
@@ -71,8 +72,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response)));
                         }
                       }finally{
-                        Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => HomePage()));
+                        Navigator.of(context).pop();
                       }
 
 

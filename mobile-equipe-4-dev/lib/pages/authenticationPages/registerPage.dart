@@ -1,11 +1,13 @@
 // ignore_for_file: unused_import
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/gestion_erreurs.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_register_page.dart';
 import '../../dto/auth.dart';
 import '../../generated/l10n.dart';
 import 'package:mobilelapincouvert/services/auth_service.dart';
@@ -64,9 +66,10 @@ class _RegisterPageState extends State<RegisterPage> {
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return kIsWeb ? WebRegisterPage() :  Scaffold(
         body: buildBody(),
         backgroundColor: Colors.white
     );

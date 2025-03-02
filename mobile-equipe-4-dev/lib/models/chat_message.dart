@@ -1,4 +1,4 @@
-
+// lib/models/chat_message.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum MessageType { text, image, emoji }
@@ -27,17 +27,28 @@ class ChatMessage {
 
   factory ChatMessage.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
+    // Handle senderType and messageType conversion safely
+    SenderType determineSenderType() {
+      if (data['senderType'] == 'client') return SenderType.client;
+      if (data['senderType'] == 'deliveryMan') return SenderType.deliveryMan;
+      return SenderType.client; // Default fallback
+    }
+
+    MessageType determineMessageType() {
+      if (data['messageType'] == 'text') return MessageType.text;
+      if (data['messageType'] == 'image') return MessageType.image;
+      if (data['messageType'] == 'emoji') return MessageType.emoji;
+      return MessageType.text; // Default fallback
+    }
+
     return ChatMessage(
       id: doc.id,
       content: data['content'] ?? '',
       timestamp: (data['timestamp'] as Timestamp).toDate(),
       senderId: data['senderId'] ?? '',
-      senderType: SenderType.values.firstWhere(
-              (e) => e.toString() == 'SenderType.${data['senderType']}',
-          orElse: () => SenderType.client),
-      messageType: MessageType.values.firstWhere(
-              (e) => e.toString() == 'MessageType.${data['messageType']}',
-          orElse: () => MessageType.text),
+      senderType: determineSenderType(),
+      messageType: determineMessageType(),
       reactions: Map<String, String>.from(data['reactions'] ?? {}),
       isRead: data['isRead'] ?? false,
     );
@@ -103,7 +114,9 @@ class Chat {
       clientId: data['clientId'] ?? 0,
       deliveryManId: data['deliveryManId'] ?? 0,
       isActive: data['isActive'] ?? true,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
       endedAt: data['endedAt'] != null
           ? (data['endedAt'] as Timestamp).toDate()
           : null,

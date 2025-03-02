@@ -1,10 +1,11 @@
-// lib/services/chat_service.dart
+// lib/services/Chat/chat_service.dart
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobilelapincouvert/models/chat_message.dart';
+import 'package:mobilelapincouvert/services/api_service.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -40,9 +41,44 @@ class ChatService {
       );
 
       await chatRef.set(chat.toFirestore());
+
+      // Add a system message indicating chat has started
+      await sendSystemMessage(
+        commandId: commandId,
+        text: "Chat started for order #$commandId",
+      );
+
     } catch (e) {
       print('Error creating chat: $e');
       // Better error handling here
+    }
+  }
+
+  // Send a system message
+  Future<void> sendSystemMessage({
+    required int commandId,
+    required String text,
+  }) async {
+    try {
+      final messageRef = _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .collection(_messagesCollection)
+          .doc();
+
+      final message = ChatMessage(
+        id: messageRef.id,
+        content: text,
+        timestamp: DateTime.now(),
+        senderId: "system",
+        senderType: SenderType.client, // Doesn't matter for system messages
+        messageType: MessageType.text,
+        isRead: true,
+      );
+
+      await messageRef.set(message.toFirestore());
+    } catch (e) {
+      print('Error sending system message: $e');
     }
   }
 
@@ -50,6 +86,12 @@ class ChatService {
   Future<void> endChat(int commandId) async {
     try {
       final chatRef = _firestore.collection(_chatsCollection).doc(commandId.toString());
+
+      // Add a system message saying the chat has ended
+      await sendSystemMessage(
+        commandId: commandId,
+        text: "Delivery completed. Chat ended.",
+      );
 
       await chatRef.update({
         'isActive': false,
@@ -67,6 +109,8 @@ class ChatService {
     required SenderType senderType,
     required String text,
   }) async {
+    if (text.trim().isEmpty) return;
+
     try {
       final messageRef = _firestore
           .collection(_chatsCollection)
@@ -298,16 +342,47 @@ class ChatService {
 
   // Pick an image from gallery or camera
   Future<File?> pickImage({required ImageSource source}) async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(
-      source: source,
-      imageQuality: 70,
-    );
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        imageQuality: 70,
+      );
 
-    if (pickedFile == null) {
+      if (pickedFile == null) {
+        return null;
+      }
+
+      return File(pickedFile.path);
+    } catch (e) {
+      print('Error picking image: $e');
       return null;
     }
+  }
 
-    return File(pickedFile.path);
+  // Get all active chats for a user (either as client or delivery person)
+  Stream<List<Chat>> getUserActiveChatsStream(int userId) {
+    return _firestore
+        .collection(_chatsCollection)
+        .where('isActive', isEqualTo: true)
+        .where(Filter.or(
+      Filter('clientId', isEqualTo: userId),
+      Filter('deliveryManId', isEqualTo: userId),
+    ))
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => Chat.fromFirestore(doc))
+          .toList();
+    });
+  }
+
+  // Initialize a chat when delivery is marked as in progress
+  Future<void> initializeChat(int commandId, int clientId, int deliveryManId) async {
+    bool chatExists = await isChatActive(commandId);
+
+    if (!chatExists) {
+      await createChat(commandId, clientId, deliveryManId);
+    }
   }
 }

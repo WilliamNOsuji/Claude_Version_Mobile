@@ -1,4 +1,4 @@
-// lib/widgets/chat/chat_message_item.dart
+// lib/widgets/widgetsChat/chat_message_item.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mobilelapincouvert/models/chat_message.dart';
@@ -101,7 +101,7 @@ class ChatMessageItem extends StatelessWidget {
     switch (message.messageType) {
       case MessageType.text:
         return GestureDetector(
-          onLongPress: _showReactionMenu,
+          onLongPress: () => _showReactionMenu(context),
           child: Text(
             message.content,
             style: TextStyle(
@@ -113,7 +113,7 @@ class ChatMessageItem extends StatelessWidget {
 
       case MessageType.image:
         return GestureDetector(
-          onLongPress: _showReactionMenu,
+          onLongPress: () => _showReactionMenu(context),
           onTap: () => _showFullScreenImage(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,7 +163,7 @@ class ChatMessageItem extends StatelessWidget {
 
       case MessageType.emoji:
         return GestureDetector(
-          onLongPress: _showReactionMenu,
+          onLongPress: () => _showReactionMenu(context),
           child: Text(
             message.content,
             style: TextStyle(fontSize: 40),
@@ -175,14 +175,7 @@ class ChatMessageItem extends StatelessWidget {
     }
   }
 
-  void _showReactionMenu() {
-    final BuildContext? context =
-    (message.messageType == MessageType.image)
-        ? null
-        : null; // Get context from builder
-
-    if (context == null) return;
-
+  void _showReactionMenu(BuildContext context) {
     // Check if current user already has a reaction
     final currentUserReaction = message.reactions[currentUserId];
 
@@ -280,4 +273,3 @@ class ChatMessageItem extends StatelessWidget {
     );
   }
 }
-

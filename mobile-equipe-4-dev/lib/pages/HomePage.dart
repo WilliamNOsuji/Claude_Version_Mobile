@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_floating_bottom_bar/flutter_floating_bottom_bar.dart';
 import 'package:mobilelapincouvert/pages/suggestion_page.dart';
 import 'package:mobilelapincouvert/services/auth_service.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_home_page.dart';
 import 'package:mobilelapincouvert/widgets/loadingPages/loading_homepage.dart';
 import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarNotDelivery.dart';
 import '../generated/l10n.dart';
@@ -82,14 +82,14 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return kIsWeb ? WebHomePage() : Scaffold(
       backgroundColor: Colors.white,
       appBar: CustomAppBar(
         title: S.of(context).labelHome,
         centerTitle: true,
         backgroundColor: Colors.white,
       ),
-      body: isLoading ? shimmerHomePage(context, setState) : buidBody(),
+      body: isLoading ? shimmerHomePage(context, setState)  : buidBody(),
     );
   }
 
@@ -262,75 +262,6 @@ class _HomePageState extends State<HomePage> {
             navBarFloatingYesDelivery(context, 0, setState))
 
       ],
-    );
-  }
-
-  Widget _navBar(){
-    return Container(
-      height: 65,
-      margin: const EdgeInsets.only(right: 24,left: 24,bottom: 24),
-      decoration: BoxDecoration(
-          color: Colors.grey[50],
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey[400]!,
-              blurRadius: 5,
-            )
-          ]
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: navIcons.map((icon){
-          int index = navIcons.indexOf(icon);
-          bool isSelected = selectedIndex == index;
-          return Material(
-            color: Colors.transparent,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  if(selectedIndex == 1){
-
-                  }
-                  else if(selectedIndex ==2){
-
-                  }
-                  else if(selectedIndex ==3){
-
-                  }
-                  selectedIndex = index;
-                });
-              },
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Container(
-                      alignment: Alignment.center,
-                      margin: EdgeInsets.only(
-                          top: 10,
-                          bottom: 0,
-                          left: 35,
-                          right: 35
-                      ),
-                      child: Icon(
-                        icon,
-                        color: isSelected ? Colors.blue : Colors.grey,
-                      ),
-                    ),
-                    Text(navTile[index], style: TextStyle(
-                        color :isSelected ? Colors.blue : Colors.grey,
-                        fontSize: 12),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    )
-                  ],
-                ),
-              ),
-            ),
-          );}).toList(),
-      ),
     );
   }
 

@@ -1,17 +1,24 @@
+import 'package:checkout_screen_ui/checkout_page/checkout_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'dart:html' as html; // Add this import for web
 import 'package:mobilelapincouvert/pages/clientOrderPages/deliveryManInfoPage.dart';
 import 'package:mobilelapincouvert/pages/deliverymanOrderPages/availableOrdersPage.dart';
 import 'package:mobilelapincouvert/pages/clientOrderPages/orderHistoryPage.dart';
 import 'package:mobilelapincouvert/pages/HomePage.dart';
 import 'package:mobilelapincouvert/pages/authenticationPages/loginPage.dart';
 import 'package:mobilelapincouvert/pages/authenticationPages/registerPage.dart';
+import 'package:mobilelapincouvert/pages/paymentProcessPages/order_success_page.dart';
 import 'package:mobilelapincouvert/pages/suggestion_page.dart';
-import 'package:mobilelapincouvert/web_pages/web_home_page.dart';
+import 'package:mobilelapincouvert/services/stripe_web_service.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_order_success_page.dart';
+import 'dto/auth.dart';
+import 'dto/payment.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_orderHistory_page.dart';
 import 'services/notifications_service.dart';
 import 'generated/l10n.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -79,7 +86,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final app = MaterialApp(
       localizationsDelegates: const [
         S.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -97,17 +104,53 @@ class _MyAppState extends State<MyApp> {
       ),
       home: LoginPage(),
       // TODO #17.2 : Assignation du navigator key
-      navigatorKey: navigatorKey,
+      //navigatorKey: navigatorKey,
       routes: {
         '/registerPage': (context) => const RegisterPage(),
         '/loginPage': (context) => const LoginPage(),
         '/homePage': (context) => const HomePage(),
         '/deliveryManInfoPage': (context) => const DeliveryManInfoPage(),
-        '/orderListPage' : (context) => const OrderHistoryPage(),
-        '/orderTrackingPage' : (context) => const AvailableOrdersPage(),
-        '/suggestionPage' : (context) => const SuggestionPage()
+        '/orderListPage': (context) => const OrderHistoryPage(),
+        '/orderTrackingPage': (context) => const AvailableOrdersPage(),
+        '/suggestionPage': (context) => const SuggestionPage(),
       },
+      // For web, use hash-based URL strategy
+      // Update this part in your onGenerateRoute method in main.dart
+
+      onGenerateRoute: kIsWeb ? (settings) {
+        print("Generating route for: ${settings.name}");
+
+        // Extract the full URL for debugging
+        final fullUrl = html.window.location.href;
+        print("Full URL: $fullUrl");
+
+        // Parse the URL to handle Stripe redirects
+        if (settings.name == '/order-success' || fullUrl.contains('order-success')) {
+          print("Handling order success route");
+
+          // We'll extract the session ID in the WebOrderSuccessPage
+          return MaterialPageRoute(
+            builder: (context) => const WebOrderSuccessPage(sessionId: ''),
+          );
+        } else if (settings.name == '/payment-cancelled' || fullUrl.contains('payment-cancelled')) {
+          // Handle the case when payment was cancelled
+          print("Handling payment cancelled route");
+          return MaterialPageRoute(
+            builder: (context) => HomePage(),
+          );
+        } else if (settings.name == '/homepage' || fullUrl.contains('homepage')) {
+          // Handle redirects back to the homepage
+          print("Handling homepage route");
+          return MaterialPageRoute(
+            builder: (context) => HomePage(),
+          );
+        }
+
+        // For other routes, use the normal route generation
+        return null;
+      } : null,
     );
+
+    return app;
   }
 }
-

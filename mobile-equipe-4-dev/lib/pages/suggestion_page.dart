@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:async';
-import 'dart:convert';
 import 'package:mobilelapincouvert/dto/vote.dart';
 import '../../services/api_service.dart';
 import '../generated/l10n.dart';

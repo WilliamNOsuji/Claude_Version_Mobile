@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import '../../dto/payment.dart';
-import '../../services/Chat/chat_service.dart';
+import '../../services/chat_service.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/navbarWidgets/navBarDelivery.dart';
 import '../../widgets/navbarWidgets/navBarNotDelivery.dart';
