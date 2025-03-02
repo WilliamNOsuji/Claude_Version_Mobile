@@ -2,103 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
-import 'package:mobilelapincouvert/pages/HomePage.dart';
-import 'package:mobilelapincouvert/pages/clientOrderPages/orderHistoryPage.dart';
-import 'package:mobilelapincouvert/pages/clientProfilePages/profilePage.dart';
+import 'package:mobilelapincouvert/services/api_service.dart';
+import 'package:mobilelapincouvert/web_interface/widgets/drawerCart.dart';
+import '../pages/Utilis/platform_route_helper.dart';
 
 class WebCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-
   const WebCustomAppBar({
     super.key,
-
   });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
       surfaceTintColor: AppColors().green(),
-      title: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Row(
-          children: [
-            Lottie.asset(
-              'assets/animations/rabbit_animation.json', // Path to your Lottie JSON file
-              height: 70,
-              fit: BoxFit.cover,
-            ),
-            Container(
-              margin: EdgeInsets.only(top:14),
-              child: Text(
-                'Lapin Couvert',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppColors().white(),
-                  fontSize: 30,
-                  fontFamily: GoogleFonts.satisfy().fontFamily,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            Spacer(),
-
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: TextButton(
-                  onPressed: (){
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => HomePage( ),
-                      ),
-                    );
-                  },
-                  child: Text("Accueil",
-                    style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,) ,)
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: TextButton(
-                  onPressed: (){
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OrderHistoryPage(),
-                      ),
-                    );
-                  },
-                  child: Text("Commande",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,) ,)
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: TextButton(
-                  onPressed: (){
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProfilePage(),
-                      ),
-                    );
-                  },
-                  child: Text("Mon Profile",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w400,) ,)
-              ),
-            ),
-            Spacer(),
-          ],
-        ),
-      ),
+      title: _buildTitle(),
       centerTitle: false,
       backgroundColor: AppColors().green(),
       automaticallyImplyLeading: false,
@@ -113,13 +30,100 @@ class WebCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       actions: [
         IconButton(
-          icon: Icon(Icons.shopping_cart, color: AppColors().white(),), // Change to the icon you want for the drawer
+          icon: Icon(Icons.shopping_cart, color: AppColors().white()), // Change to the icon you want for the drawer
           onPressed: () {
             Scaffold.of(context).openEndDrawer(); // Opens the end drawer
           },
         ),
         SizedBox(width: 24)
       ],
+    );
+  }
+
+  Widget _buildTitle() {
+    return Builder(
+        builder: (context) {
+          return Row(
+            children: [
+              Lottie.asset(
+                'assets/animations/rabbit_animation.json', // Path to your Lottie JSON file
+                height: 70,
+                fit: BoxFit.cover,
+              ),
+              Container(
+                margin: EdgeInsets.only(top: 14),
+                child: Text(
+                  'Lapin Couvert',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors().white(),
+                    fontSize: 30,
+                    fontFamily: GoogleFonts.satisfy().fontFamily,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+              Spacer(),
+
+              // Home button
+              _buildNavButton(
+                title: "Home",
+                onPressed: (context) => WebNavigationHandler.navigateToHome(context),
+              ),
+
+              // Conditional navigation based on user role
+              if (ApiService.isDelivery) ...[
+                // Delivery person navigation options
+                _buildNavButton(
+                  title: "Available Orders",
+                  onPressed: (context) => WebNavigationHandler.navigateToAvailableOrders(context),
+                ),
+                _buildNavButton(
+                  title: "My Deliveries",
+                  onPressed: (context) => WebNavigationHandler.navigateToDeliveriesList(context),
+                ),
+              ] else ...[
+                // Regular user navigation options
+                _buildNavButton(
+                  title: "My Orders",
+                  onPressed: (context) => WebNavigationHandler.navigateToOrderHistory(context),
+                ),
+              ],
+
+              // Profile button (for all users)
+              _buildNavButton(
+                title: "Profile",
+                onPressed: (context) => WebNavigationHandler.navigateToProfile(context),
+              ),
+
+              Spacer(),
+            ],
+          );
+        }
+    );
+  }
+
+  Widget _buildNavButton({
+    required String title,
+    required Function(BuildContext) onPressed
+  }) {
+    return Builder(
+        builder: (context) {
+          return Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: TextButton(
+                onPressed: () => onPressed(context),
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w400,
+                  ),
+                )
+            ),
+          );
+        }
     );
   }
 

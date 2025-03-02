@@ -1,69 +1,54 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mobilelapincouvert/pages/HomePage.dart';
-import 'package:mobilelapincouvert/pages/authenticationPages/loginPage.dart';
-import 'package:mobilelapincouvert/pages/authenticationPages/registerPage.dart';
 import 'package:mobilelapincouvert/pages/clientOrderPages/orderHistoryPage.dart';
 import 'package:mobilelapincouvert/pages/clientProfilePages/profilePage.dart';
 import 'package:mobilelapincouvert/pages/deliverymanOrderPages/availableOrdersPage.dart';
 import 'package:mobilelapincouvert/pages/deliverymanOrderPages/deliveriesListPage.dart';
-import 'package:mobilelapincouvert/pages/paymentProcessPages/cart_page.dart';
-import 'package:mobilelapincouvert/web_interface/pages/web_checkout_page.dart';
+import 'package:mobilelapincouvert/services/api_service.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_home_page.dart';
-import 'package:mobilelapincouvert/web_interface/pages/web_login_page.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_orderHistory_page.dart';
-import 'package:mobilelapincouvert/web_interface/pages/web_register_page.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_available_orders_page.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_deliveries_list_page.dart';
 
-import '../web_deliveries_list_page.dart';
-
-/// A helper class to navigate to the appropriate page based on platform
-class PlatformRouter {
-
-  /// Navigate to the home page
-  static void navigateToHome(BuildContext context, {Object? arguments}) {
+/// A utility class to handle navigation in the web interface
+class WebNavigationHandler {
+  /// Navigate to the home page based on platform
+  static void navigateToHome(BuildContext context) {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => kIsWeb
-            ? WebHomePage()
-            : HomePage(),
-        settings: RouteSettings(arguments: arguments),
+        builder: (context) => kIsWeb ? WebHomePage() : HomePage(),
       ),
     );
   }
 
-  /// Navigate to the login page
-  static void navigateToLogin(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => kIsWeb
-            ? WebLoginPage()
-            : LoginPage(),
-      ),
-    );
-  }
-
-  /// Navigate to the register page
-  static void navigateToRegister(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => kIsWeb
-            ? WebRegisterPage()
-            : RegisterPage(),
-      ),
-    );
-  }
-
-  /// Navigate to the order history page
+  /// Navigate to the order history page based on platform
   static void navigateToOrderHistory(BuildContext context) {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => kIsWeb
-            ? WebOrderHistoryPage()
-            : OrderHistoryPage(),
+        builder: (context) => kIsWeb ? WebOrderHistoryPage() : OrderHistoryPage(),
+      ),
+    );
+  }
+
+  /// Navigate to the available orders page based on platform
+  static void navigateToAvailableOrders(BuildContext context) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => kIsWeb ? WebAvailableOrdersPage() : AvailableOrdersPage(),
+      ),
+    );
+  }
+
+  /// Navigate to the deliveries list page based on platform
+  static void navigateToDeliveriesList(BuildContext context) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => kIsWeb ? WebDeliveriesListPage() : DeliveriesListPage(),
       ),
     );
   }
@@ -78,47 +63,43 @@ class PlatformRouter {
     );
   }
 
-   /// Navigate to the cart page
-  //static void navigateToCart(BuildContext context, List cartProducts) {
-  //  Navigator.pushReplacement(
-  //    context,
-  //    MaterialPageRoute(
-  //      builder: (context) => CartPage(CardProducts: cartProducts),
-  //    ),
-  //  );
-  //}
-//
-  ///// Navigate to the checkout page
-  //static void navigateToCheckout(BuildContext context, List cartProducts) {
-  //  Navigator.push(
-  //    context,
-  //    MaterialPageRoute(
-  //      builder: (context) => kIsWeb
-  //          ? WebCheckoutPage(listCartProducts: cartProducts)
-  //          : CheckoutPage(listCartProducts: cartProducts),
-  //    ),
-  //  );
-  //}
-
-  /// Navigate to the deliveries list page
-  static void navigateToDeliveriesList(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => kIsWeb
-            ? WebDeliveriesListPage()
-            : DeliveriesListPage(),
-      ),
-    );
-  }
-
-  /// Navigate to the available orders page
-  static void navigateToAvailableOrders(BuildContext context) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AvailableOrdersPage(),
-      ),
-    );
+  /// Navigate to the appropriate page based on the user's role and the selected tab
+  static void navigateToTab(BuildContext context, int index) {
+    if (ApiService.isDelivery) {
+      // Delivery person navigation
+      switch (index) {
+        case 0:
+          navigateToHome(context);
+          break;
+        case 1:
+        // Cart functionality
+          break;
+        case 2:
+          navigateToAvailableOrders(context);
+          break;
+        case 3:
+          navigateToOrderHistory(context);
+          break;
+        case 4:
+          navigateToProfile(context);
+          break;
+      }
+    } else {
+      // Regular user navigation
+      switch (index) {
+        case 0:
+          navigateToHome(context);
+          break;
+        case 1:
+        // Cart functionality
+          break;
+        case 2:
+          navigateToOrderHistory(context);
+          break;
+        case 3:
+          navigateToProfile(context);
+          break;
+      }
+    }
   }
 }

@@ -11,11 +11,12 @@ class AppWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // For web platforms, use WebChatManager to enable web chat experience
-    if (kIsWeb) {
-      return WebChatManager(child: child);
-    }
-    // For mobile platforms, just return the child directly
-    return child;
+    // Wrap with Directionality to ensure RTL/LTR context is available
+    return Directionality(
+      textDirection: TextDirection.ltr, // Default to left-to-right
+      child: kIsWeb
+          ? WebChatManager(child: child)
+          : child,
+    );
   }
 }

@@ -84,22 +84,25 @@ class _WebChatManagerState extends State<WebChatManager> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        widget.child,
+    // Make sure there's a Directionality widget available
+    return Material(
+      child: Stack(
+        children: [
+          widget.child,
 
-        // Show loading indicator while fetching chats
-        if (_isLoading && kIsWeb && ApiService.clientId != null)
-          Positioned(
-            right: 20,
-            bottom: 20,
-            child: CircularProgressIndicator(),
-          ),
+          // Show loading indicator while fetching chats
+          if (_isLoading && kIsWeb && ApiService.clientId != null)
+            Positioned(
+              right: 20,
+              bottom: 20,
+              child: CircularProgressIndicator(),
+            ),
 
-        // Add all active chat overlays
-        if (!_isLoading && kIsWeb)
-          ..._buildChatOverlays(),
-      ],
+          // Add all active chat overlays
+          if (!_isLoading && kIsWeb)
+            ..._buildChatOverlays(),
+        ],
+      ),
     );
   }
 

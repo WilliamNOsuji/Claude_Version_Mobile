@@ -27,67 +27,39 @@ import 'firebase_options.dart';
 
 const PK = "pk_test_51QprthRvxWgpsTY5AvdB6faISKonEZF1s228xll4s8UPmWOSSnTSM0FzlGmcww0v4tDDMZyIK3mCKcwuRKp0JQcb00mfF6yfWt";
 
-// TODO #17.1 : Déclaration du navigator key
+// Global key for navigator to handle navigation from anywhere
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-
 void main() async {
+  // Ensure Flutter is initialized
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  if (kDebugMode) {
-    FirebaseFirestore.setLoggingEnabled(true);
-  }
-
-
-  /* Initialisation of Stripe */
-  // Charger les variables d'environnement du fichier .env
+  // Load environment variables
   await dotenv.load(fileName: ".env");
 
-  // Vérifiez que la clé publique est bien chargée
-  print('PUBLIC_KEY: ${dotenv.env['PUBLIC_KEY']}'); // Debugging
-
-  if(!kIsWeb){
-    // Assigner la clé publique (Publishable Key) de Stripe
-    Stripe.publishableKey = dotenv.env['PUBLIC_KEY']!;
-
-    // Assigner un identifiant de marchand (nécessaire pour iOS)
+  // Initialize Stripe for mobile platforms
+  if (!kIsWeb) {
+    Stripe.publishableKey = dotenv.env['PUBLIC_KEY'] ?? PK;
     Stripe.merchantIdentifier = 'info.cegepmontpetit.ca';
-
-    // Appliquer les configurations Stripe
     await Stripe.instance.applySettings();
   }
 
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-
-// TODO #9 Transformer le widget en Stateful.
-// Truc : Mettre son curseur sur le nom de la classe, puis appuyer sur Alt+Entrée.
-//        Choisir "Convert to StatefulWidget"
-class _MyAppState extends State<MyApp> {
-  // This widgets is the root of your application.
-
-  @override
-  void initState() {
-    super.initState();
-    // TODO #10 : Mettre en place les de notifications
-    setupFirebaseMessaging();
-  }
 
   @override
   Widget build(BuildContext context) {
     final app = MaterialApp(
+      navigatorKey: navigatorKey,
+      debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
         S.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -103,47 +75,20 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: LoginPage(),
+      home: const LoginPage(),
       routes: {
-        '/registerPage': (context) => const RegisterPage(),
         '/loginPage': (context) => const LoginPage(),
+        '/registerPage': (context) => const RegisterPage(),
         '/homePage': (context) => const HomePage(),
         '/deliveryManInfoPage': (context) => const DeliveryManInfoPage(),
         '/orderListPage': (context) => const OrderHistoryPage(),
         '/orderTrackingPage': (context) => const AvailableOrdersPage(),
         '/suggestionPage': (context) => const SuggestionPage(),
+        // Other routes can be added as needed
       },
-      // For web, handle routes differently
-      onGenerateRoute: kIsWeb ? _generateWebRoutes : null,
     );
 
-    // Wrap the app with our platform-specific wrapper
+    // Wrap with our platform-specific wrapper
     return AppWrapper(child: app);
-  }
-
-  // Route generation specifically for web
-  Route<dynamic>? _generateWebRoutes(RouteSettings settings) {
-    print("Generating route for: ${settings.name}");
-
-    // Extract the full URL for debugging
-    final fullUrl = html.window.location.href;
-    print("Full URL: $fullUrl");
-
-    // Handle different web routes based on URL
-    if (settings.name == '/order-success' || fullUrl.contains('order-success')) {
-      return MaterialPageRoute(
-        builder: (context) => const OrderSuccessPage(sessionId: ''),
-      );
-    } else if (settings.name == '/payment-cancelled' || fullUrl.contains('payment-cancelled')) {
-      return MaterialPageRoute(
-        builder: (context) => HomePage(),
-      );
-    } else if (settings.name == '/homepage' || fullUrl.contains('homepage')) {
-      return MaterialPageRoute(
-        builder: (context) => HomePage(),
-      );
-    }
-
-    return null;
   }
 }

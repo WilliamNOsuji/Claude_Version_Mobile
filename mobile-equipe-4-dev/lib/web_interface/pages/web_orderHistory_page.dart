@@ -4,25 +4,25 @@ import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/clientOrderPages/commandDetailsPage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
-import 'package:mobilelapincouvert/services/chat_service.dart';
-import 'package:mobilelapincouvert/web_interface/pages/web_orderHistory_page.dart';
-import 'package:mobilelapincouvert/widgets/custom_app_bar.dart';
-import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarDelivery.dart';
-import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarNotDelivery.dart';
-
-import 'Utilis/chat_manager.dart';
+import 'package:mobilelapincouvert/web_interface/widgets/custom_app_bar.dart';
 
 class WebOrderHistoryPage extends StatefulWidget {
   const WebOrderHistoryPage({super.key});
 
   @override
-  State<WebOrderHistoryPage> createState() => _OrderHistoryPageState();
+  _WebOrderHistoryPageState createState() => _WebOrderHistoryPageState();
 }
 
-class _OrderHistoryPageState extends State<WebOrderHistoryPage> {
+class _WebOrderHistoryPageState extends State<WebOrderHistoryPage> {
   List<Command> listCommandes = [];
   bool _isLoading = true;
-  final ChatService _chatService = ChatService();
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCommands();
+  }
 
   void fetchCommands() async {
     try {
@@ -31,184 +31,215 @@ class _OrderHistoryPageState extends State<WebOrderHistoryPage> {
       setState(() {
         _isLoading = false;
       });
-    } catch(e) {
+    } catch (e) {
       print('Error fetching commands: $e');
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load orders. Please try again later.';
+      });
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    fetchCommands();
   }
 
   @override
   Widget build(BuildContext context) {
-    // For web, use the dedicated web implementation
-    if (kIsWeb) {
-      return WebOrderHistoryPage();
-    }
-
     return Scaffold(
-      appBar: CustomAppBar(
-        title: 'Mes commandes',
-        centerTitle: true,
-        backgroundColor: Colors.white,
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _buildPlatformSpecificBody(),
+      appBar: WebCustomAppBar(),
       backgroundColor: Colors.white,
+      body: _isLoading
+          ? _buildLoadingView()
+          : _errorMessage.isNotEmpty
+          ? _buildErrorView()
+          : _buildOrdersList(),
     );
   }
 
-  Widget _buildPlatformSpecificBody() {
-    // Use ChatManager to add appropriate chat functionality
-    return ChatManager.addChatToClientOrderPage(buildBody(), listCommandes);
+  Widget _buildLoadingView() {
+    return Center(
+      child: CircularProgressIndicator(),
+    );
   }
 
-  Widget buildBody() {
-    return Stack(children: [
-      Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: listCommandes.length > 0
-            ? ListView.builder(
-          itemCount: listCommandes.length,
-          itemBuilder: (context, index) {
-            return _buildCardCommande(listCommandes[index], context);
-          },
-        )
-            : Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Center(child:
-            Column(
-              children: [
-                Lottie.asset(
-                  'assets/animations/noOrderClient.json',
-                  width: 160,
-                  height: 160,
-                  fit: BoxFit.cover,
-                ),
-                Text("Vous n'avez jamais commandé.",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ],
-            )),
-          ],
-        ),
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 70, color: Colors.red[300]),
+          SizedBox(height: 16),
+          Text(
+            _errorMessage,
+            style: TextStyle(fontSize: 18),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: fetchCommands,
+            child: Text('Try Again'),
+          ),
+        ],
       ),
-      Align(
-          alignment: Alignment.bottomCenter,
-          child: !ApiService.isDelivery ?
-          navBarFloatingNoDelivery(context, 2, setState) :
-          navBarFloatingYesDelivery(context, 3, setState))
-    ]);
+    );
   }
 
-  Widget _buildCardCommande(Command commande, BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CommandDetailsPage(command: commande),
+  Widget _buildOrdersList() {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "My Orders",
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Inter',
+            ),
           ),
-        );
-      },
-      child: Hero(
-        tag: commande.id,
-        child: Card(
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: EdgeInsets.only(bottom: 15),
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-            child: Row(
+          SizedBox(height: 24),
+
+          if (listCommandes.isEmpty)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Lottie.asset(
+                      'assets/animations/noOrderClient.json',
+                      width: 240,
+                      height: 240,
+                      fit: BoxFit.cover,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      "You don't have any orders yet",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                itemCount: listCommandes.length,
+                itemBuilder: (context, index) {
+                  return _buildOrderCard(listCommandes[index]);
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderCard(Command command) {
+    return Card(
+      elevation: 4,
+      margin: EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'ID Commande: ${commande.commandNumber}',
-                      style:
-                      TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          'status: ',
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 12),
-                        ),
-                        Text(
-                          commande.deliveryManId == null
-                              ? 'En attente d\'un livreur'
-                              : 'En cours de livraison',
-                          style: TextStyle(
-                            color: commande.deliveryManId == null
-                                ? Colors.orange
-                                : Colors.blue,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        Text(
-                          "Local : " + commande.arrivalPoint.toString(),
-                          style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(Icons.access_time,
-                            color: Colors.grey[600], size: 14),
-                        SizedBox(width: 5),
-                        Text(
-                          'Fontion à vénir',
-                          style:
-                          TextStyle(color: Colors.grey[600], fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ],
+                Text(
+                  'Order #${command.commandNumber}',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'Livreur: N/A',
-                      style: TextStyle(color: Colors.grey[800], fontSize: 12),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Total: ${commande.totalPrice.toStringAsFixed(2)}',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.black),
-                    ),
-                  ],
+                _buildStatusChip(command),
+              ],
+            ),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.location_on, color: Colors.red.shade800, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Delivery Address: ${command.arrivalPoint}',
+                  style: TextStyle(fontSize: 16),
                 ),
               ],
             ),
-          ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.phone, color: Colors.blue.shade800, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Phone: ${command.clientPhoneNumber}',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.attach_money, color: Colors.green.shade800, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Total: ${command.totalPrice.toStringAsFixed(2)} ${command.currency}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            if (command.deliveryManId != null) ...[
+              SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.delivery_dining, color: Colors.purple.shade800, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Delivery Person ID: ${command.deliveryManId}',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            ],
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStatusChip(Command command) {
+    Color chipColor;
+    String statusText;
+
+    if (command.isDelivered) {
+      chipColor = Colors.green;
+      statusText = 'Delivered';
+    } else if (command.isInProgress) {
+      chipColor = Colors.orange;
+      statusText = 'In Progress';
+    } else if (command.deliveryManId != null) {
+      chipColor = Colors.blue;
+      statusText = 'Assigned';
+    } else {
+      chipColor = Colors.grey;
+      statusText = 'Pending';
+    }
+
+    return Chip(
+      label: Text(
+        statusText,
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      ),
+      backgroundColor: chipColor,
     );
   }
 }
