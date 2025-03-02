@@ -71,6 +71,12 @@ class WebCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 onPressed: (context) => WebNavigationHandler.navigateToHome(context),
               ),
 
+              // Regular user navigation options
+              _buildNavButton(
+                title: "My Orders",
+                onPressed: (context) => WebNavigationHandler.navigateToOrderHistory(context),
+              ),
+
               // Conditional navigation based on user role
               if (ApiService.isDelivery) ...[
                 // Delivery person navigation options
@@ -81,12 +87,6 @@ class WebCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
                 _buildNavButton(
                   title: "My Deliveries",
                   onPressed: (context) => WebNavigationHandler.navigateToDeliveriesList(context),
-                ),
-              ] else ...[
-                // Regular user navigation options
-                _buildNavButton(
-                  title: "My Orders",
-                  onPressed: (context) => WebNavigationHandler.navigateToOrderHistory(context),
                 ),
               ],
 

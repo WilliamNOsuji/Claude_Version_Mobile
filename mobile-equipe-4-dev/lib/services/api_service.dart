@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:mobilelapincouvert/dto/vote.dart';
-import 'package:mobilelapincouvert/services/utilis/web_utilities.dart';
 
 import '../dto/auth.dart';
 import '../dto/payment.dart';
@@ -18,6 +17,7 @@ import '../pages/paymentProcessPages/order_success_page.dart';
 import 'chat_service.dart';
 import 'auth_service.dart';
 import 'local_storage_stripe_service.dart';
+import 'dart:html' as html;
 
 //Web
 const String BaseUrl = kIsWeb ? "http://127.0.0.1:5180" : "http://10.0.2.2:5180";
@@ -688,9 +688,9 @@ class ApiService {
           final checkoutUrl = sessionResponse.data['url'];
 
           // Open the checkout URL in a new tab
-          // This will handle the web workflow
-          WebUrlUtils.openUrl(checkoutUrl);
-
+          if (kIsWeb) {
+            html.window.open(checkoutUrl, '_blank');
+          }
           // Store the session ID for later verification
           // You can save this to local storage or pass it to the success page
           LocalStorageService.saveSessionId(sessionId);
