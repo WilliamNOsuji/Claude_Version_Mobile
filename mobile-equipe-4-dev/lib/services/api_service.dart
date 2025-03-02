@@ -571,11 +571,10 @@ class ApiService {
 
   Future<void> markCommandInProgress(int commandId) async {
     try {
-      final response = await  _dio.get('/api/Commands/DeliveryInProgress/$commandId');
+      final response = await _dio.get('/api/Commands/DeliveryInProgress/$commandId');
 
       if (response.statusCode == 200) {
         // When command is marked in progress, initialize the chat
-        // Get current user info
         final currentUserId = ApiService.clientId;
 
         // We need to retrieve the command to get client and delivery person IDs
@@ -584,7 +583,7 @@ class ApiService {
         if (command != null) {
           final ChatService chatService = ChatService();
 
-          // Create or activate chat
+          // Create or activate chat without worrying about authentication
           await chatService.createChat(
             commandId,
             command.clientId,
@@ -593,6 +592,7 @@ class ApiService {
         }
       }
     } catch (e) {
+      print('Failed to mark command in progress: $e');
       throw Exception('Failed to mark command in progress: $e');
     }
   }

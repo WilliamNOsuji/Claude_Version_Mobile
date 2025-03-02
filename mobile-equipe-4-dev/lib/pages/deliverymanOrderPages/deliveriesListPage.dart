@@ -114,7 +114,7 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
       backgroundColor: Colors.white,
       body: isLoading
           ? Center(child: CircularProgressIndicator())
-          : buildBody(),
+          : buildBodyWithChat(),
     );
   }
 

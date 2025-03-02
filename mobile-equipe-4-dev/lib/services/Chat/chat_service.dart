@@ -14,41 +14,50 @@ class ChatService {
 
   // Create a new chat session when a delivery is assigned
   Future<void> createChat(int commandId, int clientId, int deliveryManId) async {
-    final chatRef = _firestore.collection(_chatsCollection).doc(commandId.toString());
+    try {
+      final chatRef = _firestore.collection(_chatsCollection).doc(commandId.toString());
 
-    // Check if chat already exists
-    //final chatDoc = await chatRef.get();
-    //if (chatDoc.exists) {
-    //  // If chat exists but is not active, reactivate it
-    //  if (!(chatDoc.data()?['isActive'] ?? false)) {
-    //    await chatRef.update({
-    //      'isActive': true,
-    //      'endedAt': null,
-    //    });
-    //  }
-    //  return;
-    //}
+      // Check if chat already exists
+      final chatDoc = await chatRef.get();
+      if (chatDoc.exists) {
+        // If chat exists but is not active, reactivate it
+        if (!(chatDoc.data()?['isActive'] ?? false)) {
+          await chatRef.update({
+            'isActive': true,
+            'endedAt': null,
+          });
+        }
+        return;
+      }
 
-    // Create new chat
-    final chat = Chat(
-      commandId: commandId,
-      clientId: clientId,
-      deliveryManId: deliveryManId,
-      isActive: true,
-      createdAt: DateTime.now(),
-    );
+      // Create new chat
+      final chat = Chat(
+        commandId: commandId,
+        clientId: clientId,
+        deliveryManId: deliveryManId,
+        isActive: true,
+        createdAt: DateTime.now(),
+      );
 
-    await chatRef.set(chat.toFirestore());
+      await chatRef.set(chat.toFirestore());
+    } catch (e) {
+      print('Error creating chat: $e');
+      // Better error handling here
+    }
   }
 
   // End a chat session when a delivery is completed
   Future<void> endChat(int commandId) async {
-    final chatRef = _firestore.collection(_chatsCollection).doc(commandId.toString());
+    try {
+      final chatRef = _firestore.collection(_chatsCollection).doc(commandId.toString());
 
-    await chatRef.update({
-      'isActive': false,
-      'endedAt': FieldValue.serverTimestamp(),
-    });
+      await chatRef.update({
+        'isActive': false,
+        'endedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error ending chat: $e');
+    }
   }
 
   // Send a text message
@@ -58,22 +67,26 @@ class ChatService {
     required SenderType senderType,
     required String text,
   }) async {
-    final messageRef = _firestore
-        .collection(_chatsCollection)
-        .doc(commandId.toString())
-        .collection(_messagesCollection)
-        .doc();
+    try {
+      final messageRef = _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .collection(_messagesCollection)
+          .doc();
 
-    final message = ChatMessage(
-      id: messageRef.id,
-      content: text,
-      timestamp: DateTime.now(),
-      senderId: senderId,
-      senderType: senderType,
-      messageType: MessageType.text,
-    );
+      final message = ChatMessage(
+        id: messageRef.id,
+        content: text,
+        timestamp: DateTime.now(),
+        senderId: senderId,
+        senderType: senderType,
+        messageType: MessageType.text,
+      );
 
-    await messageRef.set(message.toFirestore());
+      await messageRef.set(message.toFirestore());
+    } catch (e) {
+      print('Error sending text message: $e');
+    }
   }
 
   // Send an emoji message
@@ -83,22 +96,26 @@ class ChatService {
     required SenderType senderType,
     required String emoji,
   }) async {
-    final messageRef = _firestore
-        .collection(_chatsCollection)
-        .doc(commandId.toString())
-        .collection(_messagesCollection)
-        .doc();
+    try {
+      final messageRef = _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .collection(_messagesCollection)
+          .doc();
 
-    final message = ChatMessage(
-      id: messageRef.id,
-      content: emoji,
-      timestamp: DateTime.now(),
-      senderId: senderId,
-      senderType: senderType,
-      messageType: MessageType.emoji,
-    );
+      final message = ChatMessage(
+        id: messageRef.id,
+        content: emoji,
+        timestamp: DateTime.now(),
+        senderId: senderId,
+        senderType: senderType,
+        messageType: MessageType.emoji,
+      );
 
-    await messageRef.set(message.toFirestore());
+      await messageRef.set(message.toFirestore());
+    } catch (e) {
+      print('Error sending emoji: $e');
+    }
   }
 
   // Send an image message
@@ -108,34 +125,38 @@ class ChatService {
     required SenderType senderType,
     required File imageFile,
   }) async {
-    // First upload the image to Firebase Storage
-    final storageRef = _storage
-        .ref()
-        .child('chat_images')
-        .child(commandId.toString())
-        .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+    try {
+      // First upload the image to Firebase Storage
+      final storageRef = _storage
+          .ref()
+          .child('chat_images')
+          .child(commandId.toString())
+          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
 
-    final uploadTask = storageRef.putFile(imageFile);
-    final snapshot = await uploadTask;
-    final downloadUrl = await snapshot.ref.getDownloadURL();
+      final uploadTask = storageRef.putFile(imageFile);
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
 
-    // Then create the message with the image URL
-    final messageRef = _firestore
-        .collection(_chatsCollection)
-        .doc(commandId.toString())
-        .collection(_messagesCollection)
-        .doc();
+      // Then create the message with the image URL
+      final messageRef = _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .collection(_messagesCollection)
+          .doc();
 
-    final message = ChatMessage(
-      id: messageRef.id,
-      content: downloadUrl,
-      timestamp: DateTime.now(),
-      senderId: senderId,
-      senderType: senderType,
-      messageType: MessageType.image,
-    );
+      final message = ChatMessage(
+        id: messageRef.id,
+        content: downloadUrl,
+        timestamp: DateTime.now(),
+        senderId: senderId,
+        senderType: senderType,
+        messageType: MessageType.image,
+      );
 
-    await messageRef.set(message.toFirestore());
+      await messageRef.set(message.toFirestore());
+    } catch (e) {
+      print('Error sending image: $e');
+    }
   }
 
   // Add a reaction to a message
@@ -145,15 +166,19 @@ class ChatService {
     required String userId,
     required String reaction,
   }) async {
-    final messageRef = _firestore
-        .collection(_chatsCollection)
-        .doc(commandId.toString())
-        .collection(_messagesCollection)
-        .doc(messageId);
+    try {
+      final messageRef = _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .collection(_messagesCollection)
+          .doc(messageId);
 
-    await messageRef.update({
-      'reactions.$userId': reaction,
-    });
+      await messageRef.update({
+        'reactions.$userId': reaction,
+      });
+    } catch (e) {
+      print('Error adding reaction: $e');
+    }
   }
 
   // Remove a reaction from a message
@@ -162,15 +187,19 @@ class ChatService {
     required String messageId,
     required String userId,
   }) async {
-    final messageRef = _firestore
-        .collection(_chatsCollection)
-        .doc(commandId.toString())
-        .collection(_messagesCollection)
-        .doc(messageId);
+    try {
+      final messageRef = _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .collection(_messagesCollection)
+          .doc(messageId);
 
-    await messageRef.update({
-      'reactions.$userId': FieldValue.delete(),
-    });
+      await messageRef.update({
+        'reactions.$userId': FieldValue.delete(),
+      });
+    } catch (e) {
+      print('Error removing reaction: $e');
+    }
   }
 
   // Mark message as read
@@ -178,15 +207,19 @@ class ChatService {
     required int commandId,
     required String messageId,
   }) async {
-    final messageRef = _firestore
-        .collection(_chatsCollection)
-        .doc(commandId.toString())
-        .collection(_messagesCollection)
-        .doc(messageId);
+    try {
+      final messageRef = _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .collection(_messagesCollection)
+          .doc(messageId);
 
-    await messageRef.update({
-      'isRead': true,
-    });
+      await messageRef.update({
+        'isRead': true,
+      });
+    } catch (e) {
+      print('Error marking message as read: $e');
+    }
   }
 
   // Get messages stream for a specific chat
@@ -206,30 +239,40 @@ class ChatService {
 
   // Check if a chat exists and is active
   Future<bool> isChatActive(int commandId) async {
-    final chatDoc = await _firestore
-        .collection(_chatsCollection)
-        .doc(commandId.toString())
-        .get();
+    try {
+      final chatDoc = await _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .get();
 
-    if (!chatDoc.exists) {
+      if (!chatDoc.exists) {
+        return false;
+      }
+
+      return chatDoc.data()?['isActive'] ?? false;
+    } catch (e) {
+      print('Error checking if chat is active: $e');
       return false;
     }
-
-    return chatDoc.data()?['isActive'] ?? false;
   }
 
   // Get chat metadata (client info, delivery person info, etc.)
   Future<Chat?> getChatMetadata(int commandId) async {
-    final chatDoc = await _firestore
-        .collection(_chatsCollection)
-        .doc(commandId.toString())
-        .get();
+    try {
+      final chatDoc = await _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .get();
 
-    if (!chatDoc.exists) {
+      if (!chatDoc.exists) {
+        return null;
+      }
+
+      return Chat.fromFirestore(chatDoc);
+    } catch (e) {
+      print('Error getting chat metadata: $e');
       return null;
     }
-
-    return Chat.fromFirestore(chatDoc);
   }
 
   // Get unread messages count
@@ -237,15 +280,20 @@ class ChatService {
     required int commandId,
     required String userId,
   }) async {
-    final querySnapshot = await _firestore
-        .collection(_chatsCollection)
-        .doc(commandId.toString())
-        .collection(_messagesCollection)
-        .where('isRead', isEqualTo: false)
-        .where('senderId', isNotEqualTo: userId)
-        .get();
+    try {
+      final querySnapshot = await _firestore
+          .collection(_chatsCollection)
+          .doc(commandId.toString())
+          .collection(_messagesCollection)
+          .where('isRead', isEqualTo: false)
+          .where('senderId', isNotEqualTo: userId)
+          .get();
 
-    return querySnapshot.docs.length;
+      return querySnapshot.docs.length;
+    } catch (e) {
+      print('Error getting unread message count: $e');
+      return 0;
+    }
   }
 
   // Pick an image from gallery or camera

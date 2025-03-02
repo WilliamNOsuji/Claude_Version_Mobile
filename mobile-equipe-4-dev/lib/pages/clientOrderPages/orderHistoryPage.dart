@@ -40,7 +40,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         centerTitle: true,
         backgroundColor: Colors.white,
       ),
-      body: buildBody(),
+      body: buildBodyWithChat(),
       backgroundColor: Colors.white,
     );
   }

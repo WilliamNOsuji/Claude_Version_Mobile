@@ -42,6 +42,7 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _setupChat() async {
+    // Set current user ID
     _currentUserId = ApiService.clientId;
     _senderType = widget.isDeliveryMan ? SenderType.deliveryMan : SenderType.client;
   }

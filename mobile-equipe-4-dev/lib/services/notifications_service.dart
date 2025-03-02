@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mobilelapincouvert/pages/clientOrderPages/commandDetailsPage.dart';
+import 'package:mobilelapincouvert/pages/clientOrderPages/orderHistoryPage.dart';
 import 'package:mobilelapincouvert/pages/deliverymanOrderPages/deliveriesListPage.dart';
 
 import '../main.dart';
@@ -88,7 +89,7 @@ Future<void> handleForegroundNotificationClick(String payload) async {
     // TODO #17 : Le navigator key permet d'accéder au contexte depuis n'importe où
     navigatorKey.currentContext!,
     MaterialPageRoute(
-      builder: (context) => DeliveriesListPage(
+      builder: (context) => OrderHistoryPage(
         //orderContent: payload,
       ),
     ),
