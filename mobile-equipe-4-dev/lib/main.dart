@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
-import 'dart:html' as html; // Add this import for web
 import 'package:mobilelapincouvert/pages/clientOrderPages/deliveryManInfoPage.dart';
 import 'package:mobilelapincouvert/pages/deliverymanOrderPages/availableOrdersPage.dart';
 import 'package:mobilelapincouvert/pages/clientOrderPages/orderHistoryPage.dart';
@@ -57,7 +56,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final app = MaterialApp(
+    // Create the app with different routing setup based on platform
+    Widget app = MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       localizationsDelegates: const [
@@ -75,17 +75,43 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
-      routes: {
-        '/loginPage': (context) => const LoginPage(),
-        '/registerPage': (context) => const RegisterPage(),
-        '/homePage': (context) => const HomePage(),
-        '/deliveryManInfoPage': (context) => const DeliveryManInfoPage(),
-        '/orderListPage': (context) => const OrderHistoryPage(),
-        '/orderTrackingPage': (context) => const AvailableOrdersPage(),
-        '/suggestionPage': (context) => const SuggestionPage(),
-        // Other routes can be added as needed
+      initialRoute: '/',
+      onGenerateRoute: (settings) {
+        // Handle dynamic routes with parameters
+        if (settings.name != null && settings.name!.startsWith('/order-success')) {
+          // Extract session ID from the route
+          Uri uri = Uri.parse(settings.name!);
+          final sessionId = uri.queryParameters['session_id'] ?? '';
+
+          return MaterialPageRoute(
+            builder: (context) => kIsWeb
+                ? WebOrderSuccessPage(sessionId: sessionId)
+                : OrderSuccessPage(sessionId: sessionId),
+          );
+        }
+
+        // Regular routes
+        switch (settings.name) {
+          case '/':
+          case '/homePage':
+            return MaterialPageRoute(builder: (context) => const HomePage());
+          case '/loginPage':
+            return MaterialPageRoute(builder: (context) => const LoginPage());
+          case '/registerPage':
+            return MaterialPageRoute(builder: (context) => const RegisterPage());
+          case '/deliveryManInfoPage':
+            return MaterialPageRoute(builder: (context) => const DeliveryManInfoPage());
+          case '/orderListPage':
+            return MaterialPageRoute(builder: (context) => const OrderHistoryPage());
+          case '/orderTrackingPage':
+            return MaterialPageRoute(builder: (context) => const AvailableOrdersPage());
+          case '/suggestionPage':
+            return MaterialPageRoute(builder: (context) => const SuggestionPage());
+          default:
+            return MaterialPageRoute(builder: (context) => const HomePage());
+        }
       },
+      home: const LoginPage(),
     );
 
     // Wrap with our platform-specific wrapper

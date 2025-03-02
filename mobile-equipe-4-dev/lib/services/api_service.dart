@@ -704,35 +704,55 @@ class ApiService {
     }
   }
 
+  // Add these methods to your ApiService class
+
   Future<void> verifyPaymentAndCreateCommand(String sessionId) async {
     try {
+      // Show some debug info
       print("Verifying payment with session ID: $sessionId");
 
-      // Call API to verify checkout session and create command
+      // Make sure we have a valid token
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw Exception('Authentication token not found');
+      }
+
+      // Set up request headers
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+
+      // Call API to verify checkout session
       final response = await _dio.get(
-        '/api/Stripe/VerifyCheckoutSession/$sessionId',
+        '$BaseUrl/api/Stripe/VerifyPayment/$sessionId',
       );
 
       print("Verify checkout response: ${response.data}");
 
+      // Check response status
       if (response.statusCode == 200) {
-        // Extract command data from response
-        Command command = Command(
-          response.data['id'],
-          response.data['commandNumber'],
-          response.data['clientPhoneNumber'],
-          response.data['arrivalPoint'],
-          response.data['totalPrice'],
-          response.data['currency'],
-          response.data['isDelivered'],
-          response.data['isInProgress'],
-          response.data['clientId'],
-          response.data['deliveryManId'],
-        );
+        print("Payment verified successfully");
+        return response.data;
+      } else {
+        throw Exception('Payment verification failed: ${response.statusCode}');
       }
     } catch (e) {
       print('Payment verification error: $e');
+
+      // More detailed error logging
+      if (e is DioException && e.response != null) {
+        print('Response status: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+
+      throw e; // Re-throw to be handled by the caller
     }
+  }
+
+// For debugging purposes, let's add a method to print API endpoint details
+  void printApiEndpoints() {
+    print("API Base URL: $BaseUrl");
+    print("Available endpoints:");
+    print("- Create Checkout Session: $BaseUrl/api/Stripe/CreateCheckoutSession");
+    print("- Verify Payment: $BaseUrl/api/Stripe/VerifyPayment/{sessionId}");
   }
 }
 

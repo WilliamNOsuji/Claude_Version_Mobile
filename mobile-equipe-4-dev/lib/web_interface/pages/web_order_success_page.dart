@@ -4,10 +4,6 @@ import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/HomePage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
-import 'package:mobilelapincouvert/services/stripe_web_service.dart';
-import 'package:dio/dio.dart';
-
-import '../../services/api_service.dart';
 
 class WebOrderSuccessPage extends StatefulWidget {
   final String sessionId;
@@ -23,12 +19,25 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
   bool _paymentSuccessful = false;
   String _errorMessage = '';
   Command? _command;
-  final Dio _dio = Dio();
 
   @override
   void initState() {
     super.initState();
     _extractSessionIdAndVerify();
+
+    // Print debugging information
+    _printDebugInfo();
+  }
+
+  void _printDebugInfo() {
+    // Print URL and parameters for debugging
+    print("Current URL: ${html.window.location.href}");
+    print("URL Path: ${html.window.location.pathname}");
+    print("URL Search: ${html.window.location.search}");
+    print("URL Hash: ${html.window.location.hash}");
+
+    // Print API endpoints for reference
+    ApiService().printApiEndpoints();
   }
 
   void _extractSessionIdAndVerify() {
@@ -36,46 +45,73 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
     String sessionId = widget.sessionId;
 
     if (sessionId.isEmpty) {
-      // Get the full URL including hash fragments
-      final fullUrl = html.window.location.href;
-      print("Full URL: $fullUrl");
+      // Get the full URL
+      final url = html.window.location.href;
+      print("Full URL for session extraction: $url");
 
-      // Try multiple ways to extract the session ID
+      // Try to extract session_id from search parameters
+      final searchParams = html.window.location.search;
+      if (searchParams!.isNotEmpty) {
+        final searchUri = Uri.parse(searchParams!);
+        sessionId = searchUri.queryParameters['session_id'] ?? '';
+      }
 
-      // Method 1: Standard query parameter approach
-      final uri = Uri.parse(fullUrl);
-      final params = uri.queryParameters;
-      sessionId = params['session_id'] ?? '';
-
-      // Method 2: Check if session ID is in the URL path
+      // If not found in search, try the hash fragment
       if (sessionId.isEmpty) {
-        // Look for cs_test or cs_live pattern in the URL
-        final regex = RegExp(r'(cs_test_[a-zA-Z0-9]+|cs_live_[a-zA-Z0-9]+)');
-        final match = regex.firstMatch(fullUrl);
-        if (match != null && match.group(0) != null) {
-          sessionId = match.group(0)!;
+        final hash = html.window.location.hash;
+        if (hash.isNotEmpty && hash.contains('session_id=')) {
+          final hashParts = hash.split('session_id=');
+          if (hashParts.length > 1) {
+            sessionId = hashParts[1].split('&')[0];
+          }
         }
       }
 
-      // Method 3: Check for hash fragment parameters
+      // Try a regex approach as last resort
       if (sessionId.isEmpty) {
-        final hashFragment = uri.fragment;
-        if (hashFragment.isNotEmpty) {
-          // Parse hash fragment as query string
-          final hashParams = Uri.splitQueryString(hashFragment);
-          sessionId = hashParams['session_id'] ?? '';
+        final regex = RegExp(r'session_id=([^&]+)');
+        final match = regex.firstMatch(url);
+        if (match != null && match.groupCount >= 1) {
+          sessionId = match.group(1) ?? '';
         }
       }
-
-      print("Extracted session ID: $sessionId");
     }
 
+    print("Extracted session ID: $sessionId");
+
+    // If we have a session ID, verify the payment
     if (sessionId.isNotEmpty) {
-      ApiService().verifyPaymentAndCreateCommand(sessionId);
+      // Call the API to verify payment
+      _verifyPayment(sessionId);
+    } else {
+      // No session ID found
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'No session ID found in URL';
+      });
     }
   }
 
+  Future<void> _verifyPayment(String sessionId) async {
+    try {
+      print("Verifying payment with session ID: $sessionId");
 
+      // Call the API service to verify the payment
+      await ApiService().verifyPaymentAndCreateCommand(sessionId);
+
+      // If verification successful, update the state
+      setState(() {
+        _isLoading = false;
+        _paymentSuccessful = true;
+      });
+    } catch (e) {
+      print("Payment verification error: $e");
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Payment verification failed: $e';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +119,8 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          _isLoading ? 'Processing...' : (_paymentSuccessful ? 'Success!' : 'Order Issue'),
+          _isLoading ? 'Processing Payment...' :
+          (_paymentSuccessful ? 'Payment Successful!' : 'Payment Issue'),
         ),
         centerTitle: true,
         backgroundColor: _paymentSuccessful ? Colors.green : Colors.blue,
@@ -143,33 +180,6 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: 16),
-          if (_command != null)
-            Card(
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Order #${_command!.commandNumber}',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text('Amount: \$${_command!.totalPrice.toStringAsFixed(2)} ${_command!.currency}'),
-                    Text('Delivery Address: ${_command!.arrivalPoint}'),
-                    Text('Contact: ${_command!.clientPhoneNumber}'),
-                  ],
-                ),
-              ),
-            ),
           SizedBox(height: 32),
           ElevatedButton(
             onPressed: () {

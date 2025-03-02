@@ -1,12 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/dto/payment.dart';
-import 'package:mobilelapincouvert/services/api_service.dart';
 import 'package:mobilelapincouvert/services/auth_service.dart';
 import 'dart:html' as html;
-
-import '../dto/auth.dart';
 
 class StripeWebService {
   static final StripeWebService _instance = StripeWebService._internal();
@@ -36,67 +32,105 @@ class StripeWebService {
       // Set authorization header
       _dio.options.headers['Authorization'] = 'Bearer $token';
 
-      // Create command DTO for the API
-      CommandDTO commandDTO = CommandDTO(
-          address,
-          currency,
+      // Create the request object using the CheckoutSessionRequest DTO
+      final request = CheckoutSessionRequest(
           amount,
+          currency.toUpperCase(), // Ensure currency is uppercase (CAD not cad)
+          address,
           phoneNum,
-          deviceTokens
+          deviceTokens,
+          successUrl,
+          cancelUrl
       );
 
-      // Add success and cancel URLs to the request
-      final data = {
-        ...commandDTO.toJson(),
-        'successUrl': successUrl,
-        'cancelUrl': cancelUrl,
-      };
-
-      print("Sending request to create checkout session: $data");
+      print("Sending checkout session request with data: ${request.toJson()}");
 
       // Call API to create checkout session
       final response = await _dio.post(
         '$baseUrl/api/Stripe/CreateCheckoutSession',
-        data: data,
+        data: request.toJson(),
       );
 
       print("Response from server: ${response.data}");
 
       // Check if response contains checkout URL
       if (response.statusCode == 200) {
-        // Try to get checkoutUrl from different possible response formats
-        String? checkoutUrl;
-
         if (response.data is Map) {
-          // Check different possible field names
-          if (response.data['checkoutUrl'] != null) {
-            checkoutUrl = response.data['checkoutUrl'];
-          } else if (response.data['url'] != null) {
-            checkoutUrl = response.data['url'];
-          }
-        }
+          // Look for url in different possible field names
+          final url = response.data['url'] ??
+              response.data['checkoutUrl'] ??
+              response.data['id'];
 
-        if (checkoutUrl != null) {
-          return checkoutUrl;
-        } else {
-          print("Checkout URL not found in response: ${response.data}");
-          return null;
+          return url != null ? url.toString() : null;
+        } else if (response.data is String) {
+          return response.data;
         }
-      } else {
-        print("Error response status: ${response.statusCode}");
-        return null;
       }
+
+      return null;
     } catch (e) {
       print('Error creating checkout session: $e');
+
+      // Print more detailed error information if available
+      if (e is DioException && e.response != null) {
+        print('Response status: ${e.response?.statusCode}');
+        print('Response data: ${e.response?.data}');
+      }
+
       return null;
     }
   }
 
+
+  // Redirects to the Stripe checkout page
+  void redirectToCheckout(String checkoutUrl) {
+    if (checkoutUrl.isNotEmpty) {
+      html.window.location.href = checkoutUrl;
+    }
+  }
+
+  // Handle the session_id extraction from current URL
+  String? getSessionIdFromCurrentUrl() {
+    if (!kIsWeb) return null;
+
+    try {
+      final url = html.window.location.href;
+
+      // Try different approaches to extract session_id
+
+      // 1. From query parameters
+      final uri = Uri.parse(url);
+      String? sessionId = uri.queryParameters['session_id'];
+
+      // 2. From hash fragment
+      if (sessionId == null && uri.fragment.isNotEmpty) {
+        final fragmentUri = Uri.parse(uri.fragment);
+        if (fragmentUri.path == '/order-success') {
+          sessionId = Uri.parse('?${fragmentUri.query}').queryParameters['session_id'];
+        }
+      }
+
+      // 3. Using regex as fallback
+      if (sessionId == null) {
+        final regex = RegExp(r'session_id=([^&]+)');
+        final match = regex.firstMatch(url);
+        if (match != null && match.groupCount >= 1) {
+          sessionId = match.group(1);
+        }
+      }
+
+      return sessionId;
+    } catch (e) {
+      print('Error extracting session ID: $e');
+      return null;
+    }
+  }
+
+  // Verify payment session with backend
   Future<Map<String, dynamic>> verifyPaymentSession(String sessionId) async {
     try {
       // Get authentication token
       final token = await AuthService.getToken();
-
       if (token == null) {
         throw Exception('Authentication token not found');
       }
@@ -109,51 +143,23 @@ class StripeWebService {
         '$baseUrl/api/Stripe/VerifyPayment/$sessionId',
       );
 
-      if (response.statusCode == 200 &&
-          response.data['paymentStatus'] == 'paid') {
-
-        // Extract command data
-        final commandData = response.data['orderDetails'];
-        Command command = Command(
-          commandData['id'],
-          commandData['commandNumber'],
-          commandData['clientPhoneNumber'],
-          commandData['arrivalPoint'],
-          commandData['totalPrice'],
-          commandData['currency'],
-          commandData['isDelivered'],
-          commandData['isInProgress'],
-          commandData['clientId'],
-          commandData['deliveryManId'],
-        );
-
+      if (response.statusCode == 200) {
         return {
-          'status': 'success',
-          'command': command,
+          'success': true,
+          'data': response.data,
         };
       } else {
         return {
-          'status': 'error',
-          'message': 'Payment verification failed. Status: ${response.data['paymentStatus']}',
+          'success': false,
+          'message': 'Payment verification failed',
         };
       }
     } catch (e) {
       print('Error verifying payment: $e');
       return {
-        'status': 'error',
+        'success': false,
         'message': e.toString(),
       };
     }
-  }
-
-  Future<String?> _getDeviceToken() async {
-    // For web, we don't have Firebase messaging token in the same way as mobile
-    // You can implement web push notifications registration here if needed
-    return null;
-  }
-
-  // Redirects to the Stripe checkout page
-  void redirectToCheckout(String checkoutUrl) {
-    html.window.location.href = checkoutUrl;
   }
 }

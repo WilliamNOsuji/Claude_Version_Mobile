@@ -80,12 +80,12 @@ class DeliveryManDTO {
 
 @JsonSerializable()
 class CheckoutSessionRequest {
-  CheckoutSessionRequest(this.totalPrice, this.currency, this.address, this.phoneNum, this.deviceTokens, this.successUrl, this.cancelUrl);
+  CheckoutSessionRequest(this.totalPrice, this.currency, this.address, this.phoneNumber, this.deviceTokens, this.successUrl, this.cancelUrl);
 
   double totalPrice;
   String currency;
   String address;
-  String phoneNum;
+  String phoneNumber;
   List<String> deviceTokens;
   String successUrl;
   String cancelUrl;

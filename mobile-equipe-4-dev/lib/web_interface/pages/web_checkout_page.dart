@@ -241,29 +241,54 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
         // Get app base URL for success and cancel redirects
         final baseUrl = Uri.base.origin;
 
-        // Create URLs with session_id parameter
-        // Stripe will replace {CHECKOUT_SESSION_ID} with the actual session ID
-        final successUrl = '$baseUrl/#/order-success?session_id={CHECKOUT_SESSION_ID}';
-        final cancelUrl = '$baseUrl/#/homepage';
+        // Create direct URLs without hash fragments for Stripe
+        // Stripe will replace the {CHECKOUT_SESSION_ID} placeholder
+        final successUrl = '$baseUrl/order-success?session_id={CHECKOUT_SESSION_ID}';
+        final cancelUrl = '$baseUrl/';
 
-        // Get checkout session URL
-        final checkoutUrl = await StripeWebService().createCheckoutSession(
-          amount: ApiService().calculateFinalTotal(widget.listCartProducts),
-          currency: ApiService.currency,
-          address: ApiService.address,
-          phoneNum: ApiService.phoneNum,
-          deviceTokens: [],
-          successUrl: successUrl,
-          cancelUrl: cancelUrl,
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => Center(
+            child: CircularProgressIndicator(),
+          ),
         );
 
-        if (checkoutUrl != null) {
-          // Redirect to Stripe Checkout
-          StripeWebService().redirectToCheckout(checkoutUrl);
-          print("Redirecting to Stripe: $checkoutUrl");
-        } else {
+        try {
+          // Get checkout session URL using the StripeWebService
+          final stripeService = StripeWebService();
+          final checkoutUrl = await stripeService.createCheckoutSession(
+            amount: ApiService().calculateFinalTotal(widget.listCartProducts),
+            currency: ApiService.currency,
+            address: ApiService.address,
+            phoneNum: ApiService.phoneNum,
+            deviceTokens: [],
+            successUrl: successUrl,
+            cancelUrl: cancelUrl,
+          );
+
+          // Close loading dialog
+          Navigator.of(context).pop();
+
+          if (checkoutUrl != null && checkoutUrl.isNotEmpty) {
+            // Redirect to Stripe Checkout
+            print("Redirecting to Stripe: $checkoutUrl");
+            stripeService.redirectToCheckout(checkoutUrl);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to create checkout session. Please try again.')),
+            );
+          }
+        } catch (e) {
+          // Close loading dialog if still open
+          if (Navigator.canPop(context)) {
+            Navigator.of(context).pop();
+          }
+
+          print("Error during checkout session creation: $e");
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to create checkout session. Please try again.')),
+            SnackBar(content: Text('Error during checkout: ${e.toString()}')),
           );
         }
       } else {
