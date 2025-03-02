@@ -1,42 +1,71 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/clientOrderPages/commandDetailsPage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
-import 'package:mobilelapincouvert/web_interface/widgets/custom_app_bar.dart';
+import 'package:mobilelapincouvert/services/chat_service.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_orderHistory_page.dart';
+import 'package:mobilelapincouvert/widgets/custom_app_bar.dart';
 import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarDelivery.dart';
-import '../../widgets/custom_app_bar.dart';
-import '../../widgets/navbarWidgets/navBarNotDelivery.dart';
+import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarNotDelivery.dart';
+
+import 'Utilis/chat_manager.dart';
 
 class WebOrderHistoryPage extends StatefulWidget {
   const WebOrderHistoryPage({super.key});
 
   @override
-  State<WebOrderHistoryPage> createState() => _WebOrderHistoryPageState();
+  State<WebOrderHistoryPage> createState() => _OrderHistoryPageState();
 }
 
-List<Command> listCommandes = [];
+class _OrderHistoryPageState extends State<WebOrderHistoryPage> {
+  List<Command> listCommandes = [];
+  bool _isLoading = true;
+  final ChatService _chatService = ChatService();
 
-class _WebOrderHistoryPageState extends State<WebOrderHistoryPage> {
   void fetchCommands() async {
-    listCommandes = await ApiService().getClientCommads();
-    setState(() {});
+    try {
+      setState(() => _isLoading = true);
+      listCommandes = await ApiService().getClientCommads();
+      setState(() {
+        _isLoading = false;
+      });
+    } catch(e) {
+      print('Error fetching commands: $e');
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     fetchCommands();
   }
 
   @override
   Widget build(BuildContext context) {
+    // For web, use the dedicated web implementation
+    if (kIsWeb) {
+      return WebOrderHistoryPage();
+    }
+
     return Scaffold(
-      appBar: WebCustomAppBar(),
-      body: buildBody(),
+      appBar: CustomAppBar(
+        title: 'Mes commandes',
+        centerTitle: true,
+        backgroundColor: Colors.white,
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : _buildPlatformSpecificBody(),
       backgroundColor: Colors.white,
     );
+  }
+
+  Widget _buildPlatformSpecificBody() {
+    // Use ChatManager to add appropriate chat functionality
+    return ChatManager.addChatToClientOrderPage(buildBody(), listCommandes);
   }
 
   Widget buildBody() {
@@ -51,43 +80,41 @@ class _WebOrderHistoryPageState extends State<WebOrderHistoryPage> {
           },
         )
             : Column(
-
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text("Vos commandes",style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Inter'),),
-            ),
             Center(child:
             Column(
-
-
               children: [
                 Lottie.asset(
-                  'assets/animations/noOrderClient.json', // Path to your Lottie JSON file
-                  width: 300, // Adjust size as needed
+                  'assets/animations/noOrderClient.json',
+                  width: 160,
+                  height: 160,
                   fit: BoxFit.cover,
                 ),
                 Text("Vous n'avez jamais commandé.",
                   style: TextStyle(
-                    fontSize: 30,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'Inter',
-                  ),),
+                  ),
+                ),
               ],
             )),
           ],
         ),
       ),
+      Align(
+          alignment: Alignment.bottomCenter,
+          child: !ApiService.isDelivery ?
+          navBarFloatingNoDelivery(context, 2, setState) :
+          navBarFloatingYesDelivery(context, 3, setState))
     ]);
   }
 
   Widget _buildCardCommande(Command commande, BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Naviguer vers la page détaillée de la commande avec l'animation Hero
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -96,7 +123,7 @@ class _WebOrderHistoryPageState extends State<WebOrderHistoryPage> {
         );
       },
       child: Hero(
-        tag: commande.id, // Tag unique pour la transition Hero
+        tag: commande.id,
         child: Card(
           elevation: 4,
           shape: RoundedRectangleBorder(

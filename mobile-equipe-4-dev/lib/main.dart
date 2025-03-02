@@ -16,6 +16,7 @@ import 'package:mobilelapincouvert/pages/paymentProcessPages/order_success_page.
 import 'package:mobilelapincouvert/pages/suggestion_page.dart';
 import 'package:mobilelapincouvert/services/stripe_web_service.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_order_success_page.dart';
+import 'package:mobilelapincouvert/web_interface/widgets/app_wrapper.dart';
 import 'dto/auth.dart';
 import 'dto/payment.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_orderHistory_page.dart';
@@ -95,16 +96,14 @@ class _MyAppState extends State<MyApp> {
       ],
       supportedLocales: const [
         Locale('en', ''), // English, no country code
-        Locale('fr', ''), // Spanish, no country code
+        Locale('fr', ''), // French, no country code
       ],
-      title: 'Flutter Demo',
+      title: 'Lapin Couvert',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
       home: LoginPage(),
-      // TODO #17.2 : Assignation du navigator key
-      //navigatorKey: navigatorKey,
       routes: {
         '/registerPage': (context) => const RegisterPage(),
         '/loginPage': (context) => const LoginPage(),
@@ -114,43 +113,37 @@ class _MyAppState extends State<MyApp> {
         '/orderTrackingPage': (context) => const AvailableOrdersPage(),
         '/suggestionPage': (context) => const SuggestionPage(),
       },
-      // For web, use hash-based URL strategy
-      // Update this part in your onGenerateRoute method in main.dart
-
-      onGenerateRoute: kIsWeb ? (settings) {
-        print("Generating route for: ${settings.name}");
-
-        // Extract the full URL for debugging
-        final fullUrl = html.window.location.href;
-        print("Full URL: $fullUrl");
-
-        // Parse the URL to handle Stripe redirects
-        if (settings.name == '/order-success' || fullUrl.contains('order-success')) {
-          print("Handling order success route");
-
-          // We'll extract the session ID in the WebOrderSuccessPage
-          return MaterialPageRoute(
-            builder: (context) => const WebOrderSuccessPage(sessionId: ''),
-          );
-        } else if (settings.name == '/payment-cancelled' || fullUrl.contains('payment-cancelled')) {
-          // Handle the case when payment was cancelled
-          print("Handling payment cancelled route");
-          return MaterialPageRoute(
-            builder: (context) => HomePage(),
-          );
-        } else if (settings.name == '/homepage' || fullUrl.contains('homepage')) {
-          // Handle redirects back to the homepage
-          print("Handling homepage route");
-          return MaterialPageRoute(
-            builder: (context) => HomePage(),
-          );
-        }
-
-        // For other routes, use the normal route generation
-        return null;
-      } : null,
+      // For web, handle routes differently
+      onGenerateRoute: kIsWeb ? _generateWebRoutes : null,
     );
 
-    return app;
+    // Wrap the app with our platform-specific wrapper
+    return AppWrapper(child: app);
+  }
+
+  // Route generation specifically for web
+  Route<dynamic>? _generateWebRoutes(RouteSettings settings) {
+    print("Generating route for: ${settings.name}");
+
+    // Extract the full URL for debugging
+    final fullUrl = html.window.location.href;
+    print("Full URL: $fullUrl");
+
+    // Handle different web routes based on URL
+    if (settings.name == '/order-success' || fullUrl.contains('order-success')) {
+      return MaterialPageRoute(
+        builder: (context) => const OrderSuccessPage(sessionId: ''),
+      );
+    } else if (settings.name == '/payment-cancelled' || fullUrl.contains('payment-cancelled')) {
+      return MaterialPageRoute(
+        builder: (context) => HomePage(),
+      );
+    } else if (settings.name == '/homepage' || fullUrl.contains('homepage')) {
+      return MaterialPageRoute(
+        builder: (context) => HomePage(),
+      );
+    }
+
+    return null;
   }
 }

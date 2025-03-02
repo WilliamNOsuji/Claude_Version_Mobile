@@ -1,11 +1,11 @@
-// lib/web_chat/web_chat_manager.dart
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:mobilelapincouvert/models/chat_message.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
-import '../../services/chat_service.dart';
-import 'web_chat_overlay.dart';
+import 'package:mobilelapincouvert/services/chat_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:mobilelapincouvert/web_interface/pages/web_chat_overlay.dart';
 
-/// A widget that manages all active chat overlays for web
+/// A widget that wraps the app for web-specific chat implementation
 class WebChatManager extends StatefulWidget {
   final Widget child;
 
