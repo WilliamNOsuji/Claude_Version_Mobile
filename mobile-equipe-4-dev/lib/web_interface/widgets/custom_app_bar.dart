@@ -4,7 +4,7 @@ import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import 'package:mobilelapincouvert/web_interface/widgets/drawerCart.dart';
-import '../pages/Utilis/platform_route_helper.dart';
+import '../../Utilis/platform_route_helper.dart';
 
 class WebCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const WebCustomAppBar({

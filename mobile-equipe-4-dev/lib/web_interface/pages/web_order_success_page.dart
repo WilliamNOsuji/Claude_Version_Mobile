@@ -96,13 +96,14 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
     try {
       print("Verifying payment with session ID: $sessionId");
 
-      // Call the API service to verify the payment
-      await ApiService().verifyPaymentAndCreateCommand(sessionId);
+      // Call the API service to verify the payment and create command
+      final command = await ApiService().verifyPaymentAndCreateCommand(sessionId);
 
-      // If verification successful, update the state
+      // If verification and command creation successful, update the state
       setState(() {
         _isLoading = false;
         _paymentSuccessful = true;
+        _command = command;
       });
     } catch (e) {
       print("Payment verification error: $e");

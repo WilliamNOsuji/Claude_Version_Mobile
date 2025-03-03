@@ -275,6 +275,8 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
             // Redirect to Stripe Checkout
             print("Redirecting to Stripe: $checkoutUrl");
             stripeService.redirectToCheckout(checkoutUrl);
+
+            print('Hello');
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Failed to create checkout session. Please try again.')),

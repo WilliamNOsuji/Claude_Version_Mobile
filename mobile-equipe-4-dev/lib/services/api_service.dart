@@ -706,9 +706,9 @@ class ApiService {
 
   // Add these methods to your ApiService class
 
-  Future<void> verifyPaymentAndCreateCommand(String sessionId) async {
+  Future<Command?> verifyPaymentAndCreateCommand(String sessionId) async {
     try {
-      // Show some debug info
+      // Show debug info
       print("Verifying payment with session ID: $sessionId");
 
       // Make sure we have a valid token
@@ -720,17 +720,17 @@ class ApiService {
       // Set up request headers
       _dio.options.headers['Authorization'] = 'Bearer $token';
 
-      // Call API to verify checkout session
+      // Call API to verify checkout session and create command
       final response = await _dio.get(
-        '$BaseUrl/api/Stripe/VerifyPayment/$sessionId',
+        '/api/Stripe/VerifyCheckoutSession/$sessionId',
       );
 
       print("Verify checkout response: ${response.data}");
 
       // Check response status
       if (response.statusCode == 200) {
-        print("Payment verified successfully");
-        return response.data;
+        print("Payment verified and command created successfully");
+        return Command.fromJson(response.data);
       } else {
         throw Exception('Payment verification failed: ${response.statusCode}');
       }

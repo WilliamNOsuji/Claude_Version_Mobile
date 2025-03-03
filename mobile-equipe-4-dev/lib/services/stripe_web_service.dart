@@ -86,6 +86,8 @@ class StripeWebService {
   void redirectToCheckout(String checkoutUrl) {
     if (checkoutUrl.isNotEmpty) {
       html.window.location.href = checkoutUrl;
+
+      print('Hello');
     }
   }
 
