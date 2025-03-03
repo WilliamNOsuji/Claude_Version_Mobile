@@ -364,6 +364,19 @@ class _WebDeliveriesListPageState extends State<WebDeliveriesListPage> {
               ],
             ),
             SizedBox(height: 16),
+            // Chat button - only show if delivery is in progress
+            if (delivery.isInProgress)
+              ElevatedButton.icon(
+                onPressed: () => _openChatWithClient(delivery),
+                icon: Icon(Icons.chat),
+                label: Text('Chat with Client'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors().green(),
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+              ),
+            SizedBox(height: 16),
 
             // Action buttons - only show if not delivered
             if (!delivery.isDelivered)
@@ -412,6 +425,32 @@ class _WebDeliveriesListPageState extends State<WebDeliveriesListPage> {
           ],
         ),
       ),
+    );
+  }
+
+  // Add this method to the _WebDeliveriesListPageState class
+  void _openChatWithClient(Command delivery) {
+    // Make sure we have a valid delivery person ID
+    final deliveryManId = ApiService.clientId;
+
+    if (deliveryManId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Delivery person ID not found. Please log in again.')),
+      );
+      return;
+    }
+
+    // Navigate to the WebChatPage with the appropriate parameters
+    Navigator.pushNamed(
+      context,
+      '/web-chat',
+      arguments: {
+        'commandId': delivery.id,
+        'otherUserId': delivery.clientId,
+        'otherUserName': 'Client',
+        'isDeliveryMan': true, // This is the delivery person's view
+        'deliveryManId': deliveryManId, // Pass the delivery person ID explicitly
+      },
     );
   }
 

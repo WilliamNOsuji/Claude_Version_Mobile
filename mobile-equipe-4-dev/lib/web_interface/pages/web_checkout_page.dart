@@ -3,13 +3,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/dto/auth.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
-import 'package:mobilelapincouvert/services/stripe_web_service.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_order_success_page.dart';
 import 'package:mobilelapincouvert/widgets/custom_app_bar.dart';
 import 'package:mobilelapincouvert/widgets/order_progress.dart';
 import 'package:mobilelapincouvert/pages/paymentProcessPages/order_success_page.dart';
 import '../../gestion_erreurs.dart';
 import '../../models/colors.dart';
+import '../../services/web_api_service.dart';
 
 class WebCheckoutPage extends StatefulWidget {
   final List<CartProductDTO> listCartProducts;
@@ -243,7 +243,8 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
 
         // Create direct URLs without hash fragments for Stripe
         // Stripe will replace the {CHECKOUT_SESSION_ID} placeholder
-        final successUrl = '$baseUrl/order-success?session_id={CHECKOUT_SESSION_ID}';
+        //final successUrl = '$baseUrl/order-success?session_id={CHECKOUT_SESSION_ID}';
+        final successUrl = '$baseUrl/web-order-success';
         final cancelUrl = '$baseUrl/';
 
         // Show loading indicator
@@ -257,7 +258,7 @@ class _WebCheckoutPageState extends State<WebCheckoutPage> {
 
         try {
           // Get checkout session URL using the StripeWebService
-          final stripeService = StripeWebService();
+          final stripeService = WebApiService();
           final checkoutUrl = await stripeService.createCheckoutSession(
             amount: ApiService().calculateFinalTotal(widget.listCartProducts),
             currency: ApiService.currency,

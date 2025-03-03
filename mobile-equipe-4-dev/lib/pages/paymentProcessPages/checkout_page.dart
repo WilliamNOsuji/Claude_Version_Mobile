@@ -5,7 +5,6 @@ import 'package:mobilelapincouvert/dto/auth.dart';
 import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/paymentProcessPages/order_success_page.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
-import 'package:mobilelapincouvert/services/stripe_web_service.dart';
 import 'package:mobilelapincouvert/widgets/custom_app_bar.dart';
 import 'package:mobilelapincouvert/widgets/order_progress.dart';
 import '../../gestion_erreurs.dart';
@@ -29,75 +28,75 @@ TextEditingController phoneNumber_controller = TextEditingController();
 bool _isButtonDisabled = false;
 
 class _CheckoutPageState extends State<CheckoutPage> {
-  final StripeWebService _stripeWebService = StripeWebService();
+  //final StripeWebService _stripeWebService = StripeWebService();
 
   @override
   void initState() {
     super.initState();
 
     // Check for Stripe payment return (web only)
-    if (kIsWeb) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _checkStripePaymentReturn();
-      });
-    }
+    //if (kIsWeb) {
+    //  WidgetsBinding.instance.addPostFrameCallback((_) {
+    //    _checkStripePaymentReturn();
+    //  });
+    //}
   }
 
-  void _checkStripePaymentReturn() {
-    if (!kIsWeb) return;
+  //void _checkStripePaymentReturn() {
+  //  if (!kIsWeb) return;
+//
+  //  // Get current URL including hash fragment
+  //  final uri = Uri.parse(Uri.base.toString());
+  //  final path = uri.fragment; // Get the fragment part after #
+//
+  //  if (path.startsWith('/order-success')) {
+  //    // Extract session ID from query parameters
+  //    final queryParams = Uri.parse(path).queryParameters;
+  //    final sessionId = queryParams['session_id'];
+//
+  //    if (sessionId != null) {
+  //      _handleSuccessfulPayment(sessionId);
+  //    }
+  //  } else if (path.startsWith('/checkout')) {
+  //    // Handle cancelled payment case
+  //    final queryParams = Uri.parse(path).queryParameters;
+  //    if (queryParams['canceled'] == 'true') {
+  //      ScaffoldMessenger.of(context).showSnackBar(
+  //        SnackBar(content: Text('Payment was cancelled')),
+  //      );
+  //    }
+  //  }
+  //}
 
-    // Get current URL including hash fragment
-    final uri = Uri.parse(Uri.base.toString());
-    final path = uri.fragment; // Get the fragment part after #
-
-    if (path.startsWith('/order-success')) {
-      // Extract session ID from query parameters
-      final queryParams = Uri.parse(path).queryParameters;
-      final sessionId = queryParams['session_id'];
-
-      if (sessionId != null) {
-        _handleSuccessfulPayment(sessionId);
-      }
-    } else if (path.startsWith('/checkout')) {
-      // Handle cancelled payment case
-      final queryParams = Uri.parse(path).queryParameters;
-      if (queryParams['canceled'] == 'true') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Payment was cancelled')),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleSuccessfulPayment(String sessionId) async {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(child: CircularProgressIndicator()),
-    );
-
-    // Verify payment with backend
-    final command = await _stripeWebService.verifyPaymentSession(sessionId);
-
-    // Close loading dialog
-    Navigator.pop(context);
-
-    if (command != null) {
-      // Navigate to success page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OrderSuccessPage(sessionId: "",),
-        ),
-      );
-    } else {
-      // Show error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not verify payment. Please contact support.')),
-      );
-    }
-  }
+  //Future<void> _handleSuccessfulPayment(String sessionId) async {
+  //  // Show loading indicator
+  //  showDialog(
+  //    context: context,
+  //    barrierDismissible: false,
+  //    builder: (context) => Center(child: CircularProgressIndicator()),
+  //  );
+//
+  //  // Verify payment with backend
+  //  final command = await _stripeWebService.verifyPaymentSession(sessionId);
+//
+  //  // Close loading dialog
+  //  Navigator.pop(context);
+//
+  //  if (command != null) {
+  //    // Navigate to success page
+  //    Navigator.pushReplacement(
+  //      context,
+  //      MaterialPageRoute(
+  //        builder: (context) => OrderSuccessPage(sessionId: "",),
+  //      ),
+  //    );
+  //  } else {
+  //    // Show error
+  //    ScaffoldMessenger.of(context).showSnackBar(
+  //      SnackBar(content: Text('Could not verify payment. Please contact support.')),
+  //    );
+  //  }
+  //}
 
   @override
   Widget build(BuildContext context) {

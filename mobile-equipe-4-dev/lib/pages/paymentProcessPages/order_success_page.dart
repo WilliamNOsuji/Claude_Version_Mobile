@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/HomePage.dart';
-import 'package:mobilelapincouvert/services/stripe_web_service.dart';
 
 class OrderSuccessPage extends StatefulWidget {
   final String sessionId;
@@ -22,31 +21,31 @@ class _OrderSuccessPageState extends State<OrderSuccessPage> {
   @override
   void initState() {
     super.initState();
-    if(kIsWeb){
-      _verifyPayment();
-    }
+    //if(kIsWeb){
+    //  _verifyPayment();
+    //}
   }
 
-  Future<void> _verifyPayment() async {
-    try {
-      final stripeWebService = StripeWebService();
-      final command = await stripeWebService.verifyPaymentSession(widget.sessionId);
-
-      if (mounted) {
-        setState(() {
-          _command = command as Command?;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Failed to verify payment. Please contact support.';
-          _isLoading = false;
-        });
-      }
-    }
-  }
+  //Future<void> _verifyPayment() async {
+  //  try {
+  //    final stripeWebService = StripeWebService();
+  //    final command = await stripeWebService.verifyPaymentSession(widget.sessionId);
+//
+  //    if (mounted) {
+  //      setState(() {
+  //        _command = command as Command?;
+  //        _isLoading = false;
+  //      });
+  //    }
+  //  } catch (e) {
+  //    if (mounted) {
+  //      setState(() {
+  //        _errorMessage = 'Failed to verify payment. Please contact support.';
+  //        _isLoading = false;
+  //      });
+  //    }
+  //  }
+  //}
 
   @override
   Widget build(BuildContext context) {

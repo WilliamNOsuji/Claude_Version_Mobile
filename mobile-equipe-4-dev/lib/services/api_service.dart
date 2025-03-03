@@ -17,7 +17,6 @@ import '../pages/paymentProcessPages/order_success_page.dart';
 import 'chat_service.dart';
 import 'auth_service.dart';
 import 'local_storage_stripe_service.dart';
-import 'dart:html' as html;
 
 //Web
 const String BaseUrl = kIsWeb ? "http://127.0.0.1:5180" : "http://10.0.2.2:5180";
@@ -643,7 +642,7 @@ class ApiService {
 
   Future<bool> verifyStripePaymentStatus(String sessionId) async {
     try {
-      var response = await _dio.get('/api/Stripe/VerifyPayment/$sessionId');
+      var response = await _dio.get('/api/Stripe/VerifyCheckoutSession/$sessionId');
 
       if (response.statusCode == 200) {
         // Check the payment status from the response
@@ -657,102 +656,92 @@ class ApiService {
     }
   }
 
-// Add this to handle web-specific payment flow
-  Future<void> processWebPayment(BuildContext context, List<CartProductDTO> cartProducts) async {
-    try {
-      // Step 1: Validate cart products
-      var validationResponse = await validateCartProducts(context, cartProducts);
-
-      if (validationResponse.toString() == "Le panier est valide") {
-        // Step 2: Create a Stripe checkout session
-        String? token = await FirebaseMessaging.instance.getToken();
-        List<String> tokens = token != null ? [token] : [];
-
-        CommandDTO commandDTO = CommandDTO(
-            address,
-            currency,
-            finalAmount,
-            phoneNum,
-            tokens
-        );
-
-        // Create a checkout session
-        var sessionResponse = await _dio.post(
-          '/api/Stripe/CreateCheckoutSession',
-          data: commandDTO.toJson(),
-        );
-
-        if (sessionResponse.statusCode == 200) {
-          // Get checkout URL from response
-          final sessionId = sessionResponse.data['id'];
-          final checkoutUrl = sessionResponse.data['url'];
-
-          // Open the checkout URL in a new tab
-          if (kIsWeb) {
-            html.window.open(checkoutUrl, '_blank');
-          }
-          // Store the session ID for later verification
-          // You can save this to local storage or pass it to the success page
-          LocalStorageService.saveSessionId(sessionId);
-        }
-      }
-    } catch (e) {
-      print("Web payment initialization error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to initialize payment: $e')),
-      );
-    }
-  }
-
-  // Add these methods to your ApiService class
-
   Future<Command?> verifyPaymentAndCreateCommand(String sessionId) async {
     try {
-      // Show debug info
-      print("Verifying payment with session ID: $sessionId");
-
-      // Make sure we have a valid token
+      // Get token from persistent storage
       final token = await AuthService.getToken();
       if (token == null) {
-        throw Exception('Authentication token not found');
+        print('Authentication token not found for payment verification');
+        throw Exception('Authentication token not found. Please log in again.');
       }
 
       // Set up request headers
       _dio.options.headers['Authorization'] = 'Bearer $token';
 
+      // Log request details
+      print('Verifying payment session: $sessionId');
+      print('Using API endpoint: $BaseUrl/api/Stripe/VerifyCheckoutSession/$sessionId');
+
       // Call API to verify checkout session and create command
       final response = await _dio.get(
         '/api/Stripe/VerifyCheckoutSession/$sessionId',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) {
+            return status! < 500; // Accept all responses below 500 to handle server errors
+          },
+        ),
       );
 
-      print("Verify checkout response: ${response.data}");
+      // Log the response
+      print('Payment verification response status: ${response.statusCode}');
+      print('Payment verification response data: ${response.data}');
 
-      // Check response status
+      // Check if the response is successful
       if (response.statusCode == 200) {
-        print("Payment verified and command created successfully");
-        return Command.fromJson(response.data);
+        try {
+          // Try to parse the command from the response
+          final command = Command.fromJson(response.data);
+
+          // Update cart count after successful order
+          ApiService.CartItemCount = 0;
+
+          return command;
+        } catch (parseError) {
+          print('Error parsing command from response: $parseError');
+          throw Exception('Invalid response format from server');
+        }
+      } else if (response.statusCode == 401) {
+        // Handle authentication errors
+        print('Authentication failed during payment verification');
+        throw Exception('Authentication expired. Please log in again.');
       } else {
-        throw Exception('Payment verification failed: ${response.statusCode}');
+        // Handle other error responses
+        String errorMessage = 'Payment verification failed';
+        if (response.data is Map && response.data['message'] != null) {
+          errorMessage = response.data['message'];
+        }
+        throw Exception(errorMessage);
+      }
+    } on DioException catch (e) {
+      // Handle Dio-specific errors
+      print('DioException during payment verification: ${e.message}');
+
+      if (e.type == DioExceptionType.connectionError) {
+        throw Exception('Connection error. Please check your internet connection.');
+      } else if (e.response != null) {
+        print('Error response status: ${e.response?.statusCode}');
+        print('Error response data: ${e.response?.data}');
+
+        if (e.response?.statusCode == 401) {
+          throw Exception('Your session has expired. Please log in again.');
+        } else {
+          String errorMsg = 'Server error';
+          if (e.response?.data is Map && e.response?.data['message'] != null) {
+            errorMsg = e.response?.data['message'];
+          }
+          throw Exception(errorMsg);
+        }
+      } else {
+        throw Exception('Network error: ${e.message}');
       }
     } catch (e) {
-      print('Payment verification error: $e');
-
-      // More detailed error logging
-      if (e is DioException && e.response != null) {
-        print('Response status: ${e.response?.statusCode}');
-        print('Response data: ${e.response?.data}');
-      }
-
-      throw e; // Re-throw to be handled by the caller
+      // Handle all other errors
+      print('Error during payment verification: $e');
+      throw Exception('Error verifying payment: $e');
     }
-  }
-
-// For debugging purposes, let's add a method to print API endpoint details
-  void printApiEndpoints() {
-    print("API Base URL: $BaseUrl");
-    print("Available endpoints:");
-    print("- Create Checkout Session: $BaseUrl/api/Stripe/CreateCheckoutSession");
-    print("- Verify Payment: $BaseUrl/api/Stripe/VerifyPayment/{sessionId}");
   }
 }
 
