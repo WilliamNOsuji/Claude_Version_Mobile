@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/gestion_erreurs.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
+import 'package:mobilelapincouvert/pages/authenticationPages/loginPage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_register_page.dart';
 import '../../dto/auth.dart';
@@ -20,25 +21,25 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
-final TextEditingController username_controller = TextEditingController();
-final TextEditingController password_controller = TextEditingController();
+final TextEditingController username_reg_controller = TextEditingController();
+final TextEditingController password_reg_controller = TextEditingController();
 final TextEditingController email_controller = TextEditingController();
 final TextEditingController confirmpassword_controller = TextEditingController();
 final TextEditingController firstname_controller = TextEditingController();
 final TextEditingController lastname_controller = TextEditingController();
 
-class _RegisterPageState extends State<RegisterPage> {
 
-  final PageController _pageController = PageController();
-  final List<GlobalKey<FormState>> _formKeys = [
+class _RegisterPageState extends State<RegisterPage> {
+  final List<GlobalKey<FormState>> _registerFormKeys = [
     GlobalKey<FormState>(),
     GlobalKey<FormState>(),
   ];
+  final PageController _pageController = PageController();
   int _currentPage = 0;
 
   void _nextPage() {
-    if (_formKeys[_currentPage].currentState!.validate()) {
-      if (_currentPage < _formKeys.length - 1) {
+    if (_registerFormKeys[_currentPage].currentState!.validate()) {
+      if (_currentPage < _registerFormKeys.length - 1) {
         setState(() {
           _currentPage++;
         });
@@ -65,6 +66,18 @@ class _RegisterPageState extends State<RegisterPage> {
         curve: Curves.easeInOut,
       );
     }
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    username_reg_controller.text = '';
+    password_reg_controller.text = '';
+    email_controller.text = '';
+    confirmpassword_controller.text = '';
+    firstname_controller.text = '';
+    lastname_controller.text = '';
   }
 
   @override
@@ -141,7 +154,7 @@ class _RegisterPageState extends State<RegisterPage> {
                               foregroundColor: Colors.white,
                             ),
                             onPressed: _nextPage,
-                            child:_currentPage == _formKeys.length - 1 ? isLoading ? SizedBox( height: 16, width:16, child: CircularProgressIndicator(color: Colors.white70,))  : Text(S.of(context).labelRegister, style: TextStyle(fontWeight: FontWeight.bold),) : Icon(Icons.arrow_forward_ios, color: Colors.white),
+                            child:_currentPage == _registerFormKeys.length - 1 ? isLoading ? SizedBox( height: 16, width:16, child: CircularProgressIndicator(color: Colors.white70,))  : Text(S.of(context).labelRegister, style: TextStyle(fontWeight: FontWeight.bold),) : Icon(Icons.arrow_forward_ios, color: Colors.white),
                           ),
                         ],
                       ),
@@ -153,7 +166,11 @@ class _RegisterPageState extends State<RegisterPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 8.0),
                           child: ElevatedButton(
                             onPressed: () async {
-                              Navigator.pushNamed(context, '/loginPage');
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => LoginPage(),
+                                ),
+                              );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors().gray(),
@@ -191,11 +208,11 @@ class _RegisterPageState extends State<RegisterPage> {
       isLoading = !isLoading;
     });
     RegisterDTO regDTO = RegisterDTO(
-        username_controller.text,
+        username_reg_controller.text,
         firstname_controller.text,
         lastname_controller.text,
-        '${username_controller.text}@lapincouvert.ca',
-        password_controller.text,
+        '${username_reg_controller.text}@lapincouvert.ca',
+        password_reg_controller.text,
         confirmpassword_controller.text
     );
 
@@ -206,7 +223,7 @@ class _RegisterPageState extends State<RegisterPage> {
       clearAllControllers();
       Navigator.pushReplacementNamed(context, '/homePage', arguments: response.token,);
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text( '${response.clientName}est connecté!!!' )));
+          SnackBar(content: Text( '${response.clientName} ${S.of(context).userLoggedIn}' )));
     }
 
     setState(() {
@@ -216,7 +233,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildStep1() {
     return Form(
-      key: _formKeys[0],
+      key: _registerFormKeys[0],
       child: Column(
         children: [
           Row(
@@ -259,7 +276,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           SizedBox(height: 24), // Add spacing between fields
           TextFormField(
-            controller: username_controller,
+            controller: username_reg_controller,
             decoration: InputDecoration(
               labelText: S.of(context).labelUsername,
               labelStyle: TextStyle(color: AppColors().gray()),
@@ -282,7 +299,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
             ),
-            validator: (value) => errorUsername(context, username_controller.text),
+            validator: (value) => errorUsername(context, username_reg_controller.text),
           ),
           SizedBox(height: 16), // Add spacing between fields
           TextFormField(
@@ -344,7 +361,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
   Widget _buildStep2() {
     return Form(
-      key: _formKeys[1],
+      key: _registerFormKeys[1],
       child: Column(
         children: [
           Row(
@@ -380,7 +397,7 @@ class _RegisterPageState extends State<RegisterPage> {
           SizedBox(height: 24),
           Container(
             margin: EdgeInsets.only(top:24, bottom: 12),
-            child: Text('Créer votre mot de passe',
+            child: Text(S.of(context).createYourPassword,
               style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppColors().green(),
@@ -389,7 +406,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
           TextFormField(
-            controller: password_controller,
+            controller: password_reg_controller,
             keyboardType: TextInputType.visiblePassword,
             obscureText: true,
             decoration: InputDecoration(
@@ -414,7 +431,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
             ),
-            validator: (value) => errorSignUpPassword(context, password_controller.text, confirmpassword_controller.text),
+            validator: (value) => errorSignUpPassword(context, password_reg_controller.text, confirmpassword_controller.text),
           ),
           SizedBox(height: 16), // Add spacing between fields
           TextFormField(
@@ -443,7 +460,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
             ),
-            validator: (value) => errorSignUpPassword(context, password_controller.text, confirmpassword_controller.text),
+            validator: (value) => errorSignUpPassword(context, password_reg_controller.text, confirmpassword_controller.text),
           ),
         ],
       ),
@@ -451,8 +468,8 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   void clearAllControllers(){
-    username_controller.clear();
-    password_controller.clear();
+    username_reg_controller.clear();
+    password_reg_controller.clear();
     email_controller.clear();
     confirmpassword_controller.clear();
     firstname_controller.clear();

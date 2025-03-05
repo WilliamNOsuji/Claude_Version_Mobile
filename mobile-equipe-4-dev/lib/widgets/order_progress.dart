@@ -2,6 +2,8 @@ import 'package:easy_stepper/easy_stepper.dart';
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
 
+import '../generated/l10n.dart';
+
 class OrderProgress extends StatelessWidget {
   const OrderProgress({super.key, required this.activeStep});
 
@@ -22,22 +24,22 @@ class OrderProgress extends StatelessWidget {
       steps: [
         EasyStep(
           customStep: Icon(Icons.shopping_cart, color: activeStep >= 1 ? AppColors().white() : AppColors().black(),),
-          customTitle: const Text(
-            'Panier',
+          customTitle:  Text(
+            S.of(context).panier,
             textAlign: TextAlign.center,
           ),
         ),
         EasyStep(
           customStep: Icon(Icons.check, color: activeStep >= 2 ? AppColors().white() : AppColors().black(),),
-          customTitle: const Text(
-            'Vérification',
+          customTitle:  Text(
+            S.of(context).vrification,
             textAlign: TextAlign.center,
           ),
         ),
         EasyStep(
           customStep: Icon(Icons.payment, color: activeStep == 3 ? AppColors().white() : AppColors().black(),),
-          customTitle: const Text(
-            'Paiement',
+          customTitle:  Text(
+            S.of(context).paiement,
             textAlign: TextAlign.center,
           ),
         ),

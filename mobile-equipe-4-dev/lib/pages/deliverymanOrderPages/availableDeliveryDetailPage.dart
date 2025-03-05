@@ -3,6 +3,7 @@ import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/deliverymanOrderPages/availableOrdersPage.dart';
 import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarDelivery.dart';
 
+import '../../generated/l10n.dart';
 import '../../services/api_service.dart';
 
 class AvailableDeliveryDetailPage extends StatefulWidget {
@@ -18,7 +19,7 @@ class _AvailableDeliveryDetailPageState extends State<AvailableDeliveryDetailPag
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Order Details'),
+        title: Text(S.of(context).orderDetails),
         centerTitle: true,
       ),
       body: Padding(
@@ -31,7 +32,7 @@ class _AvailableDeliveryDetailPageState extends State<AvailableDeliveryDetailPag
               child: Material(
                 color: Colors.transparent,
                 child: Text(
-                  'Order ID: ${widget.order.commandNumber}',
+                  '${S.of(context).orderID} ${widget.order.commandNumber}',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -39,17 +40,17 @@ class _AvailableDeliveryDetailPageState extends State<AvailableDeliveryDetailPag
             SizedBox(height: 16),
             Row(
               children: [
-                Text('Status : '),
-                Text(widget.order.deliveryManId == null ? 'Status: En attente d\'un livreur' : 'Status: En cours de livraison', style: TextStyle(color: widget.order.deliveryManId == null ? Colors.orange : Colors.blue),),
+                Text(S.of(context).orderID),
+                Text(widget.order.deliveryManId == null ? S.of(context).statusEnAttenteDunLivreur : S.of(context).statusEnCoursDeLivraison, style: TextStyle(color: widget.order.deliveryManId == null ? Colors.orange : Colors.blue),),
               ],
             ),
-            Text( 'Prix total: ${widget.order.totalPrice.toStringAsFixed(2)}'),
+            Text( '${S.of(context).totalPrice} ${widget.order.totalPrice.toStringAsFixed(2)}'),
             SizedBox(height: 12),
             ElevatedButton(
               onPressed: () async {
                 await assignDelivery(widget.order.id); // Assuming Command has an 'id' field
               },
-              child: Text('Assign'),
+              child: Text(S.of(context).assign),
             ),
           ],
         ),
@@ -62,7 +63,7 @@ class _AvailableDeliveryDetailPageState extends State<AvailableDeliveryDetailPag
     try {
       var result = await ApiService().assignADelivery(commandId);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Assigned Success")), // Show success message
+        SnackBar(content: Text(S.of(context).assignedSuccess)), // Show success message
       );
 
       Navigator.push(
@@ -73,7 +74,7 @@ class _AvailableDeliveryDetailPageState extends State<AvailableDeliveryDetailPag
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to assign delivery: $e')),
+        SnackBar(content: Text('${S.of(context).failedassignDelivery} $e')),
       );
     }
   }

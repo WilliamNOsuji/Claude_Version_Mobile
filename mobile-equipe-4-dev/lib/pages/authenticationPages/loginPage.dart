@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/dto/auth.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
+import 'package:mobilelapincouvert/pages/authenticationPages/registerPage.dart';
 import 'package:mobilelapincouvert/services/auth_service.dart';
 
 import '../../generated/l10n.dart';
@@ -20,10 +21,18 @@ class LoginPage extends StatefulWidget {
 }
 final TextEditingController username_controller = TextEditingController();
 final TextEditingController password_controller = TextEditingController();
-GlobalKey<FormState> formkey = GlobalKey<FormState>();
 bool isLoading = false;
 
 class _LoginPageState extends State<LoginPage> {
+  GlobalKey<FormState> loginFormkey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    username_controller.text = '';
+    password_controller.text = '';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,11 +83,11 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
-                  Text('Connection', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color: AppColors().green()),),
+                  Text(S.of(context).loginPageTitle, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color: AppColors().green()),),
                   SizedBox(height: 48),
                   // Form
                   Form(
-                    key: formkey,
+                    key: loginFormkey,
                     child: Column(
                       children: [
                         TextFormField(
@@ -144,75 +153,95 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   SizedBox(height: 24), // Add spacing between form and buttons
                   // Login Button
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (!isLoading) {
-                        if (formkey.currentState!.validate()) {
-                          FocusManager.instance.primaryFocus?.unfocus();
-                          setState(() {
-                            isLoading = true;
-                          });
-                          SigninDTO signinDTO = SigninDTO(username_controller.text.toString(), password_controller.text.toString());
-                          SigninSuccessDTO? result = await ApiService().login(context, signinDTO);
-                          if (result != null) {
-                            await AuthService.saveToken(result.token);
-                            Navigator.pushReplacementNamed(context, '/homePage', arguments: result.token);
-                          }
-                          setState(() {
-                            isLoading = false;
-                          });
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors().green(),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 110, vertical: 9),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (!isLoading) {
+                              if (loginFormkey.currentState!.validate()) {
+                                FocusManager.instance.primaryFocus?.unfocus();
+                                setState(() {
+                                  isLoading = true;
+                                });
+                                SigninDTO signinDTO = SigninDTO(username_controller.text.toString(), password_controller.text.toString());
+                                SigninSuccessDTO? result = await ApiService().login(context, signinDTO);
+                                if (result != null) {
+                                  await AuthService.saveToken(result.token);
+                                  Navigator.pushReplacementNamed(context, '/homePage', arguments: result.token);
+                                }
+                                setState(() {
+                                  isLoading = false;
+                                });
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors().green(),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 110, vertical: 9),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: isLoading
+                              ? SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(color: Colors.white70),
+                          )
+                              : Text(
+                            S.of(context).buttonConnexion,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: isLoading
-                        ? SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(color: Colors.white70),
-                    )
-                        : Text(
-                      'Connexion',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    ],
                   ),
                   SizedBox(height: 16), // Add spacing between buttons
                   // Create Account Button
-                  ElevatedButton(
-                    onPressed: () async {
-                      Navigator.pushNamed(context, '/registerPage');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors().gray(),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 89, vertical: 9),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) => RegisterPage(),
+                                ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors().gray(),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 89, vertical: 9),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            S.of(context).crerUnCompte,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontFamily: 'Inter',
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'Créer un compte',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),

@@ -1,13 +1,8 @@
-
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../services/api_service.dart';
-import '../navbarWidgets/navBarDelivery.dart';
-import '../navbarWidgets/navBarNotDelivery.dart';
 
-
-Widget shimmerHomePage(BuildContext context, StateSetter setState){
+Widget shimmerHomePage(){
 
   return Shimmer.fromColors(
     baseColor: Colors.grey.shade300,

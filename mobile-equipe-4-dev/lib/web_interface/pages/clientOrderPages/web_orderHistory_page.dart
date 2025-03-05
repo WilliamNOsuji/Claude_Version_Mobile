@@ -5,6 +5,12 @@ import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/clientOrderPages/commandDetailsPage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import 'package:mobilelapincouvert/web_interface/widgets/custom_app_bar.dart';
+import 'package:mobilelapincouvert/web_interface/widgets/footer.dart';
+import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarDelivery.dart';
+import '../../../models/colors.dart';
+import '../../../widgets/custom_app_bar.dart';
+import '../../../widgets/navbarWidgets/navBarNotDelivery.dart';
+
 
 class WebOrderHistoryPage extends StatefulWidget {
   const WebOrderHistoryPage({super.key});
@@ -208,11 +214,59 @@ class _WebOrderHistoryPageState extends State<WebOrderHistoryPage> {
                     style: TextStyle(fontSize: 16),
                   ),
                 ],
+
+              ),
+            ],
+            if (command.isInProgress && !command.isDelivered && command.deliveryManId != null) ...[
+              SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () => _openChatWithDeliveryPerson(command),
+                    icon: Icon(Icons.chat),
+                    label: Text('Chat with Delivery Person'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors().green(),
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ],
         ),
       ),
+    );
+  }
+
+  void _openChatWithDeliveryPerson(Command command) {
+    // Make sure a delivery person is assigned
+    if (command.deliveryManId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No delivery person assigned yet')),
+      );
+      return;
+    }
+
+    // Make sure we have a valid client ID or get it from the command
+    final clientId = ApiService.clientId ?? command.clientId;
+
+    // Navigate to the WebChatPage with the appropriate parameters
+    Navigator.pushNamed(
+      context,
+      '/web-chat',
+      arguments: {
+        'commandId': command.id,
+        'otherUserId': command.deliveryManId!,
+        'otherUserName': 'Delivery Person',
+        'isDeliveryMan': false, // This is the client's view
+        'clientId': clientId, // Pass the client ID explicitly
+      },
     );
   }
 

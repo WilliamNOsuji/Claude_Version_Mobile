@@ -38,6 +38,10 @@ String? errorLocal(BuildContext context,String local){
     String message = 'Ce champs ne peut être vide';
     return message;
   }
+  if(local.trim().length < 3){
+    String message = 'Local invalide : minimum de 3 caractères';
+    return message;
+  }
   return null;
 }
 

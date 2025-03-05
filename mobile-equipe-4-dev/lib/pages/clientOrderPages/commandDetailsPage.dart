@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import '../../dto/payment.dart'; // Assuming Command is defined here
+import 'package:mobilelapincouvert/web_interface/pages/clientOrderPages/web_commandDetailsPage.dart';
+import '../../dto/payment.dart';
+import '../../generated/l10n.dart'; // Assuming Command is defined here
 
 class CommandDetailsPage extends StatelessWidget {
   final Command command;
@@ -8,47 +11,45 @@ class CommandDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return kIsWeb ? WebCommandDetailsPage(command: command,) : Scaffold(
       appBar: AppBar(
-        title: Text('Détails de la Commande'),
+        title: Text(S.of(context).dtailsDeLaCommande),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Hero(
-              tag: 'command-${command.id}', // Même tag que dans CommandListPage
-              child: Icon(Icons.local_shipping, size: 100), // Exemple d'icône
-            ),
+            Icon(Icons.local_shipping, size: 100),
             SizedBox(height: 20),
             Text(
-              'Numéro de Commande: ${command.commandNumber}',
+              '${S.of(context).numroDeCommandeCommandcommandnumber} ${command.commandNumber}',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
             Text(
-              'Statut: ${command.isDelivered ? "Livrée" : "En Attente"}',
+
+              '${S.of(context).status} ${command.isDelivered ? "${S.of(context).delivered}" : "${S.of(context).waiting}"}',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 10),
             Text(
-              'Numéro de Téléphone du Client: ${command.clientPhoneNumber}',
+              '${S.of(context).NumeroDeTelephone} ${command.clientPhoneNumber}',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 10),
             Text(
-              'Point d\'Arrivée: ${command.arrivalPoint}',
+              '${S.of(context).arrivalTime} ${command.arrivalPoint}',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 10),
             Text(
-              'Prix Total: ${command.totalPrice} ${command.currency}',
+              '${S.of(context).totalPrice} ${command.totalPrice} ${command.currency}',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 10),
             Text(
-              'ID du Client: ${command.clientId}',
+              '${S.of(context).ClientId} ${command.clientId}',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 10),
@@ -59,12 +60,12 @@ class CommandDetailsPage extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        'Information du livreur',
+                        S.of(context).livreurInfo,
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                       ),
 
                       Text(
-                        'ID du Livreur: ${command.deliveryManId ?? "Non Assigné"}',
+                        '${S.of(context).livreurID} ${command.deliveryManId ?? "${S.of(context).assignation}"}',
                         style: TextStyle(fontSize: 16),
                       ),
 

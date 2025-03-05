@@ -77,10 +77,11 @@ Widget navBarFloatingNoDelivery(BuildContext context, int _selectedIndex , State
         return Material(
           color: Colors.transparent,
           child: GestureDetector(
-            onTap: () {
-              setState(() async {
+            onTap: () async {
+              setState(() {
                 // Update selected index
                 _selectedIndex = index;
+              });
 
                 // Navigate to appropriate page based on selection
                 if (index == 0) {
@@ -98,7 +99,7 @@ Widget navBarFloatingNoDelivery(BuildContext context, int _selectedIndex , State
                     try {
                       List<CartProductDTO> response =
                       await ApiService().getCartProducts(token, ApiService.clientId);
-                      Navigator.pushReplacement(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => CartPage(CardProducts: response),
@@ -128,7 +129,7 @@ Widget navBarFloatingNoDelivery(BuildContext context, int _selectedIndex , State
                     );
                   }
                 }
-              });
+              ;
             },
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

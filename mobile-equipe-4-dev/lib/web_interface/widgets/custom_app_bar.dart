@@ -7,127 +7,115 @@ import 'package:mobilelapincouvert/web_interface/widgets/drawerCart.dart';
 import '../../Utilis/platform_route_helper.dart';
 
 class WebCustomAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String? profileImageUrl;
+  final String userName;
+
   const WebCustomAppBar({
     super.key,
+    this.profileImageUrl,
+    this.userName = "Utilisateur",
   });
 
   @override
   Widget build(BuildContext context) {
+    // Get the screen width to handle responsiveness
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenWidth < 600;
+
     return AppBar(
-      surfaceTintColor: AppColors().green(),
-      title: _buildTitle(),
+      title: Row(
+        children: [
+          // Only show the logo and text if screen is large enough
+          if (!isSmallScreen) ...[
+            Lottie.asset(
+              'assets/animations/rabbit_animation.json',
+              height: 70,
+              fit: BoxFit.cover,
+            ),
+            Container(
+              margin: const EdgeInsets.only(top: 14),
+              child: Text(
+                'Lapin Couvert',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors().white(),
+                  fontSize: isSmallScreen ? 24 : 30,
+                  fontFamily: GoogleFonts.satisfy().fontFamily,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ],
+          if (isSmallScreen)
+            Text(
+              'LC',
+              style: TextStyle(
+                color: AppColors().white(),
+                fontSize: 24,
+                fontFamily: GoogleFonts.satisfy().fontFamily,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          const Spacer(),
+        ],
+      ),
       centerTitle: false,
       backgroundColor: AppColors().green(),
       automaticallyImplyLeading: false,
-      elevation: 0,
-      bottom: PreferredSize(
-        preferredSize: Size.fromHeight(4.0), // Height of the bottom line
-        child: Container(
-          margin: EdgeInsets.only(top: 12),
-          color: Colors.grey.shade200, // Color of the line
-          height: 1.0, // Thickness of the line
+      leading: Builder(
+        builder: (context) => IconButton(
+          icon: Icon(
+            Icons.menu_outlined,
+            color: AppColors().white(),
+            size: 28,
+          ),
+          onPressed: () {
+            Scaffold.of(context).openDrawer();
+          },
+          tooltip: 'Menu',
         ),
       ),
       actions: [
+        // Shopping cart icon
         IconButton(
-          icon: Icon(Icons.shopping_cart, color: AppColors().white()), // Change to the icon you want for the drawer
+          icon: Icon(
+            Icons.shopping_cart,
+            color: AppColors().white(),
+            size: 26,
+          ),
           onPressed: () {
-            Scaffold.of(context).openEndDrawer(); // Opens the end drawer
+            Scaffold.of(context).openEndDrawer();
           },
+          tooltip: 'Panier',
         ),
-        SizedBox(width: 24)
+        // Profile picture
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: GestureDetector(
+            onTap: () {
+              // Navigate to profile page or show profile options
+              Navigator.of(context).pushNamed('/profile');
+            },
+            child: CircleAvatar(
+              backgroundColor: AppColors().white(),
+              radius: 18,
+              backgroundImage: profileImageUrl != null
+                  ? NetworkImage(profileImageUrl!)
+                  : null,
+              child: profileImageUrl == null
+                  ? Icon(
+                Icons.person,
+                color: AppColors().green(),
+                size: 24,
+              )
+                  : null,
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildTitle() {
-    return Builder(
-        builder: (context) {
-          return Row(
-            children: [
-              Lottie.asset(
-                'assets/animations/rabbit_animation.json', // Path to your Lottie JSON file
-                height: 70,
-                fit: BoxFit.cover,
-              ),
-              Container(
-                margin: EdgeInsets.only(top: 14),
-                child: Text(
-                  'Lapin Couvert',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColors().white(),
-                    fontSize: 30,
-                    fontFamily: GoogleFonts.satisfy().fontFamily,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ),
-              Spacer(),
-
-              // Home button
-              _buildNavButton(
-                title: "Home",
-                onPressed: (context) => WebNavigationHandler.navigateToHome(context),
-              ),
-
-              // Regular user navigation options
-              _buildNavButton(
-                title: "My Orders",
-                onPressed: (context) => WebNavigationHandler.navigateToOrderHistory(context),
-              ),
-
-              // Conditional navigation based on user role
-              if (ApiService.isDelivery) ...[
-                // Delivery person navigation options
-                _buildNavButton(
-                  title: "Available Orders",
-                  onPressed: (context) => WebNavigationHandler.navigateToAvailableOrders(context),
-                ),
-                _buildNavButton(
-                  title: "My Deliveries",
-                  onPressed: (context) => WebNavigationHandler.navigateToDeliveriesList(context),
-                ),
-              ],
-
-              // Profile button (for all users)
-              _buildNavButton(
-                title: "Profile",
-                onPressed: (context) => WebNavigationHandler.navigateToProfile(context),
-              ),
-
-              Spacer(),
-            ],
-          );
-        }
-    );
-  }
-
-  Widget _buildNavButton({
-    required String title,
-    required Function(BuildContext) onPressed
-  }) {
-    return Builder(
-        builder: (context) {
-          return Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: TextButton(
-                onPressed: () => onPressed(context),
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
-                  ),
-                )
-            ),
-          );
-        }
-    );
-  }
-
-  // Required to satisfy the PreferredSizeWidget interface.
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

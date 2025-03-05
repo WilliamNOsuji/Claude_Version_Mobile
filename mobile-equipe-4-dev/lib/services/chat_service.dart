@@ -378,11 +378,62 @@ class ChatService {
   }
 
   // Initialize a chat when delivery is marked as in progress
-  Future<void> initializeChat(int commandId, int clientId, int deliveryManId) async {
-    bool chatExists = await isChatActive(commandId);
+  // Add this enhanced method to the ChatService class
 
-    if (!chatExists) {
-      await createChat(commandId, clientId, deliveryManId);
+  Future<void> initializeChat(int commandId, int? clientId, int? deliveryManId) async {
+    try {
+      // Validate parameters
+      if (commandId <= 0) {
+        throw Exception("Invalid command ID: $commandId");
+      }
+
+      // Ensure we have valid IDs - convert null to default if needed
+      final int safeClientId = clientId ?? 0;
+      final int safeDeliveryManId = deliveryManId ?? 0;
+
+      if (safeClientId <= 0) {
+        throw Exception("Invalid client ID: $clientId");
+      }
+
+      if (safeDeliveryManId <= 0) {
+        throw Exception("Invalid delivery person ID: $deliveryManId");
+      }
+
+      final chatRef = _firestore.collection(_chatsCollection).doc(commandId.toString());
+
+      // Check if chat already exists
+      final chatDoc = await chatRef.get();
+      if (chatDoc.exists) {
+        // If chat exists but is not active, reactivate it
+        if (!(chatDoc.data()?['isActive'] ?? false)) {
+          await chatRef.update({
+            'isActive': true,
+            'endedAt': null,
+          });
+        }
+        return;
+      }
+
+      // Create new chat with safe values
+      final chat = Chat(
+        commandId: commandId,
+        clientId: safeClientId,
+        deliveryManId: safeDeliveryManId,
+        isActive: true,
+        createdAt: DateTime.now(),
+      );
+
+      await chatRef.set(chat.toFirestore());
+
+      // Add a system message indicating chat has started
+      await sendSystemMessage(
+        commandId: commandId,
+        text: "Chat started for order #$commandId",
+      );
+    } catch (e) {
+      print('Error creating chat: $e');
+      // Rethrow with more context
+      throw Exception('Failed to initialize chat: $e');
     }
   }
 }

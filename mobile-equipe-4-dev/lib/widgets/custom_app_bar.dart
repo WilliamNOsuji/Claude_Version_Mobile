@@ -26,9 +26,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       centerTitle: false,
       backgroundColor: Colors.white,
       leading: backPage == null ? null : IconButton(onPressed: (){
-        Navigator.push(context,
-            MaterialPageRoute(builder: (context) => HomePage())
-        );
+        Navigator.pop(context);
       }, icon: Icon(Icons.arrow_back_ios_new)),
       automaticallyImplyLeading: backPage == null ? false : backPage as bool ,
     );

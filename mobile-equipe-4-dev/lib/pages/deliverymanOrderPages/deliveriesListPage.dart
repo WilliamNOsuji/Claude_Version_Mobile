@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import '../../dto/payment.dart';
 import '../../services/chat_service.dart';
+import '../../generated/l10n.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/navbarWidgets/navBarDelivery.dart';
 import '../../widgets/navbarWidgets/navBarNotDelivery.dart';
@@ -36,7 +37,7 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
         isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec du chargement des livraisons: $e')),
+        SnackBar(content: Text(S.of(context).checDuChargementDesLivraisons + e.toString())),
       );
     }
   }
@@ -45,13 +46,13 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
     try {
       await ApiService().commandDelivered(commandId);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Livraison effectuée avec succès")), // Afficher un message de succès
+        SnackBar(content: Text(S.of(context).livraisonEffectueAvecSuccs)), // Afficher un message de succès
       );
       // Actualiser la liste des livraisons après avoir marqué comme livré
       fetchMyDeliveries();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec de la marque comme livré: $e')),
+        SnackBar(content: Text(S.of(context).checDeLaMarqueCommeLivr +e.toString())),
       );
     }
   }
@@ -73,16 +74,16 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
     bool confirmCancel = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Annuler la Livraison'),
-        content: Text('Êtes-vous sûr de vouloir annuler cette livraison ?'),
+        title: Text(S.of(context).annulerLaLivraison),
+        content: Text(S.of(context).tesvousSrDeVouloirAnnulerCetteLivraison),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Non'),
+            child: Text(S.of(context).non),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('Oui'),
+            child: Text(S.of(context).oui),
           ),
         ],
       ),
@@ -92,12 +93,12 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
       try {
         await ApiService().cancelADelivery(commandId);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Annulation réussie")),
+          SnackBar(content: Text(S.of(context).annulationRussie)),
         );
         fetchMyDeliveries();
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Échec de l\'annulation de la livraison: $e')),
+          SnackBar(content: Text(S.of(context).checDeLannulationDeLaLivraison +e.toString())),
         );
       }
     }
@@ -107,7 +108,7 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: "Mes livraisons",
+        title: S.of(context).mesLivraisons,
         centerTitle: true,
         backgroundColor: Colors.white,
       ),
@@ -133,15 +134,17 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
                   margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: ListTile(
                     leading: Hero(
-                      tag: 'command-${delivery.id}',
+                      tag: S.of(context).command + delivery.id.toString(),
                       child: Icon(Icons.local_shipping, size: 40),
                     ),
-                    title: Text('Commande #${delivery.commandNumber}'),
+                    title: Text(S.of(context).commande + delivery.commandNumber.toString()),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Statut: ${delivery.isDelivered ? "Livrée" : "En Attente"}'),
-                        Text('Point d\'Arrivée: ${delivery.arrivalPoint}'),
+                        Text(delivery.isDelivered ?
+                            S.of(context).statutLivre: S.of(context).statutEnAttente
+                        ),
+                        Text(S.of(context).pointDarrive +delivery.arrivalPoint.toString()),
                       ],
                     ),
                     trailing: Row(
@@ -167,7 +170,7 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
                             style: ElevatedButton.styleFrom(
                               padding: EdgeInsets.symmetric(horizontal: 8),
                             ),
-                            child: Text('Livrer'),
+                            child: Text(S.of(context).livrer),
                           ),
                           SizedBox(width: 8),
                           ElevatedButton(
@@ -178,7 +181,7 @@ class _DeliveriesListPageState extends State<DeliveriesListPage> {
                               backgroundColor: Colors.red,
                               padding: EdgeInsets.symmetric(horizontal: 8),
                             ),
-                            child: Text('Annuler'),
+                            child: Text(S.of(context).annuler),
                           ),
                         ],
                       ],

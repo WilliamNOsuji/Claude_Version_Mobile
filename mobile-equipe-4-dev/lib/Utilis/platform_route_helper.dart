@@ -7,9 +7,10 @@ import 'package:mobilelapincouvert/pages/deliverymanOrderPages/availableOrdersPa
 import 'package:mobilelapincouvert/pages/deliverymanOrderPages/deliveriesListPage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_home_page.dart';
-import 'package:mobilelapincouvert/web_interface/pages/web_orderHistory_page.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_available_orders_page.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_deliveries_list_page.dart';
+
+import '../web_interface/pages/clientOrderPages/web_orderHistory_page.dart';
 
 /// A utility class to handle navigation in the web interface
 class WebNavigationHandler {

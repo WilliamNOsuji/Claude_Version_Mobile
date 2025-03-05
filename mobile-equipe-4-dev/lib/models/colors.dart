@@ -18,4 +18,13 @@ class AppColors{
   Color gray(){
     return Color(0xff738290);
   }
+  // Muted burnt orange to replace deepOrange
+  Color orange() {
+    return Color(0xffB04A33);
+  }
+
+  // Subdued teal to replace cyan
+  Color teal() {
+    return Color(0xff3A9CA6);
+  }
 }

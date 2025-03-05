@@ -2,7 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_product_detail_page.dart';
-import '../models/product_model.dart';
+import '../dto/product.dart';
+import '../generated/l10n.dart';
 import '../services/api_service.dart';
 
 class ProductDetailPage extends StatefulWidget {
@@ -16,7 +17,7 @@ class ProductDetailPage extends StatefulWidget {
 class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   Widget build(BuildContext context) {
-    return kIsWeb ? WebProductDetailPage(product: widget.product) : Scaffold(
+    return  Scaffold(
       appBar: AppBar(
         //title: Text(product.name),
         backgroundColor: AppColors().white(),
@@ -26,14 +27,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Hero(
-              tag: 'product-${widget.product.id}',
-              child: SizedBox(
-                height: 200,
-                child: widget.product.photo != null
-                    ? Image.network(widget.product.photo!, fit: BoxFit.cover)
-                    : Image.asset('assets/images/placeholder_image.webp', fit: BoxFit.cover),
-              ),
+            SizedBox(
+              height: 200,
+              child: widget.product.photo != null
+                  ? Image.network(widget.product.photo!, fit: BoxFit.cover)
+                  : Image.asset('assets/images/placeholder_image.webp', fit: BoxFit.cover),
             ),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -51,16 +49,16 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   ),
                   SizedBox(height: 16),
                   Text(
-                    'Brand: ${widget.product.brand}',
+                    S.of(context).brand +widget.product.brand.toString(),
                     style: TextStyle(fontSize: 16),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'Quantity: ${widget.product.quantity}',
+                    'Quantity: ' + widget.product.quantity.toString(),
                     style: TextStyle(fontSize: 16),
                   ),
                   SizedBox(height: 16),
-                  ElevatedButton(
+                  widget.product.quantity > 0 ? ElevatedButton(
                     style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors().green(),
                         foregroundColor: AppColors().white()
@@ -74,11 +72,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       }finally{
                         Navigator.of(context).pop();
                       }
-
-
                     },
-                    child: Text('Add to Cart', style: TextStyle(fontWeight: FontWeight.bold),),
-                  )
+                    child: Text(S.of(context).addToCart, style: TextStyle(fontWeight: FontWeight.bold),),
+                  ) : SizedBox()
                 ],
               ),
             ),

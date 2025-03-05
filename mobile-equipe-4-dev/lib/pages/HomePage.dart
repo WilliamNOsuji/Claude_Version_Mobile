@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/pages/suggestion_page.dart';
@@ -5,8 +6,9 @@ import 'package:mobilelapincouvert/services/auth_service.dart';
 import 'package:mobilelapincouvert/web_interface/pages/web_home_page.dart';
 import 'package:mobilelapincouvert/widgets/loadingPages/loading_homepage.dart';
 import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarNotDelivery.dart';
+import '../dto/product.dart';
 import '../generated/l10n.dart';
-import '../models/product_model.dart';
+import '../web_interface/pages/web_home_page.dart';
 import '../widgets/custom_app_bar.dart';
 import '../services/api_service.dart';
 import '../widgets/navbarWidgets/navBarDelivery.dart';
@@ -89,7 +91,13 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
         backgroundColor: Colors.white,
       ),
-      body: isLoading ? shimmerHomePage(context, setState)  : buidBody(),
+      body:  RefreshIndicator(
+        onRefresh: ()async {
+          await fetchProducts(token);
+          },
+        color: AppColors().green(),
+        child: isLoading ? shimmerHomePage()  : buidBody(),
+      ),
     );
   }
 
@@ -152,7 +160,7 @@ class _HomePageState extends State<HomePage> {
                           children: [
                             // Title
                             Text(
-                              'Votez pour des produits!',
+                              S.of(context).votezPourDesProduits,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
@@ -162,7 +170,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                             // Subtitle
                             Text(
-                              'Partagez votre avis sur nos prochains produits!',
+                              S.of(context).partagezVotreAvisSurNosProchainsProduits,
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.8),
                                 fontSize: 14,
@@ -246,7 +254,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 itemCount: products.length,
                 itemBuilder: (context, index) {
-                  final product = products[index];
+                  final product = AllProducts[index];
                   return _buildProductCard(product);
                 },
               )
@@ -296,129 +304,144 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       },
-      child: Hero(
-        tag: product.photo!,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                spreadRadius: 2,
-                blurRadius: 5,
-                offset: Offset(0, 3),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 2,
+              blurRadius: 5,
+              offset: Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image
+            ClipRRect(
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Product Image
-              ClipRRect(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
-                child: Image.network(
-                  product.photo ?? 'https://placehold.co/180x180',
-                  height: 80,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+              child: Image.network(
+                product.photo ?? 'https://placehold.co/180x180',
+                height: 80,
+                width: double.infinity,
+                fit: BoxFit.cover,
               ),
+            ),
 
-              // Product Details
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF040926),
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+            // Product Details
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF040926),
                     ),
-                    SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          product.brand!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        product.brand!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF738290),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          textAlign: TextAlign.right,
+                          '(${product.category.name})',
                           style: TextStyle(
                             fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF738290),
+                            color: AppColors().gray(),
+                            fontStyle: FontStyle.italic,
                           ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                         ),
-                        Expanded(
-                          child: Text(
-                            textAlign: TextAlign.right,
-                            '(${product.category.name})',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: AppColors().gray(),
-                              fontStyle: FontStyle.italic,
-                            ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                          ),
-                        ),
+                      ),
 
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          '\$${product.sellingPrice.toStringAsFixed(2)}',
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF5FAD41),
-                          ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        '\$${product.sellingPrice.toStringAsFixed(2)}',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF5FAD41),
                         ),
-                        SizedBox(height: 5,),
-                        if (product.quantity > 0)
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors().black(),
-                              foregroundColor: AppColors().white(),
-                              minimumSize: Size(112, 36)
-                            ),
-                            onPressed: () async {
-                              var response = await ApiService().addCartProducts(context,product.id,ApiService.clientId,setState,);
-                              if (response == "Ce produit n'existe plus" || response == "Ce produit est épuisé") {
-                                initState();
-                              }
-                            },
-                            child: Text('Ajouter'),
+                      ),
+                      SizedBox(height: 5,),
+                      if (product.quantity > 0)
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors().black(),
+                            foregroundColor: AppColors().white(),
+                            minimumSize: Size(112, 36)
                           ),
-                        if (product.quantity <= 0)
-                          Text(
-                            S.of(context).noStockWidget,
-                            style: TextStyle(
-                              color: Color(0xFFC80000),
-                              fontSize: 16,
+                          onPressed: () {
+                            addCartProduct(product);
+                          },
+                          child: Text('Ajouter'),
+                        ),
+                      if (product.quantity <= 0)
+                        Align(
+                          alignment: Alignment.bottomLeft,
+                          child: Container(
+                            width: 100,
+                            padding: EdgeInsets.symmetric(vertical: 8.0,),
+                            decoration: BoxDecoration(
+                                color: AppColors().red().withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(8.0)
                             ),
+                            child: Text(S.of(context).noStockWidget, textAlign: TextAlign.center, style: TextStyle(color: AppColors().red(), fontWeight: FontWeight.bold),),
                           ),
-                      ],
-                    ),
-                  ],
-                ),
+                        )
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  void addCartProduct(Product product)async{
+
+    String response = 'Erreur serveur';
+    try {
+      response = await ApiService().addCartProducts(
+          context, product.id, ApiService.clientId, setState);
+    }finally{
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response))
+      );
+
+      fetchProducts(token);
+
+    }
   }
 
 

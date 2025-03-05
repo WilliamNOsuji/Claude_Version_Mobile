@@ -1,23 +1,31 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
+import 'package:mime/mime.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobilelapincouvert/dto/vote.dart';
 
 import '../dto/auth.dart';
 import '../dto/payment.dart';
+import '../dto/product.dart';
 import '../gestion_erreurs.dart';
-import '../models/product_model.dart';
+import '../main.dart';
 import '../pages/clientOrderPages/orderHistoryPage.dart';
 import '../pages/paymentProcessPages/order_success_page.dart';
 import 'chat_service.dart';
 import 'auth_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'local_storage_stripe_service.dart';
-import 'dart:html' as html;
 
 //Web
 const String BaseUrl = kIsWeb ? "http://127.0.0.1:5180" : "http://10.0.2.2:5180";
@@ -40,9 +48,11 @@ class ApiService {
   static bool isActive = false;
 
 
+
+
   final Dio _dio = Dio(
     BaseOptions(
-      baseUrl: BaseUrl,
+      baseUrl:   BaseUrl,
       //baseUrl: BaseUrlDeployed,
       //baseUrl: BaseUrlDeployed,
       connectTimeout: const Duration(seconds: 100),
@@ -65,13 +75,21 @@ class ApiService {
           return handler.next(options);
         },
         onError: (DioException error, handler) {
+          if (error.response?.statusCode == 401) {
+            _redirectToLogin();
+          }
           return handler.next(error);
         },
       ),
     );
   }
 
-
+  void _redirectToLogin() {
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/loginPage', // Or whatever your login route is
+          (route) => false, // Remove all back stack
+    );
+  }
 
   Future<SigninSuccessDTO?> register(BuildContext context, RegisterDTO registerDTO) async {
     try{
@@ -150,26 +168,30 @@ class ApiService {
       throw Exception('Dio error: ${e.message}');
     }
   }
-
   Future<String> addCartProducts(BuildContext context,int productId, int clientId, StateSetter setState) async {
-    
+
     try {
       var response = await _dio.post('/api/Cart/AddCartProduct/$productId/$clientId');
-      if (response.statusCode == 200) {
 
-        if(response.toString() != 'Produit existe déjà'){
+      if (response.statusCode == 200) {
+        if (response.data.toString() != 'Produit existe déjà') {
           setState(() {
             ApiService.CartItemCount++;
           });
         }
+        return response.data.toString(); // Successful response
       } else {
-        throw Exception('Failed to load products');
+        return 'Erreur du serveur';
       }
-      return response.toString();
     } on DioException catch (e) {
-      throw Exception('Dio error: ${e.message}');
+      if(e.type == DioExceptionType.badResponse){
+        return e.response.toString();
+      }
+
+      return 'Erreur de connexion au serveur';
     }
   }
+
 
   Future<void> addQuantityCartProducts(BuildContext context,int productId, int clientId) async {
 
@@ -224,37 +246,7 @@ class ApiService {
 
   }
 
-  Future<Command?> MakePayment(BuildContext context, CommandDTO commandDTO, List<CartProductDTO> cartProducts) async {
-    try {
-      // Step 1: Validate cart products
-      var validationResponse = await ApiService().validateCartProducts(context, cartProducts);
-      if (validationResponse.toString() == "Le panier est valide") {
-        // Step 2: Get payment intent from Stripe
-        var paymentIntentResponse = await ApiService().getPaymentIntent(ApiService.finalAmount, ApiService.currency);
-        await ApiService().initPaymentSheet(paymentIntentResponse);
 
-        // Step 3: Present the payment sheet
-        await Stripe.instance.presentPaymentSheet();
-
-        // Step 4: If payment is successful, create the command
-        return await ApiService().CreateCommand(commandDTO);
-      }
-    } catch (e) {
-      print("Payment error: $e");
-    }
-    return null; // Return null if payment fails
-  }
-
-  Future<Command> CreateCommand (CommandDTO commandDTO) async{
-    try{
-      var response = await _dio.post('/api/Commands/Create', data: commandDTO.toJson());
-      Command commandSuccess = Command.fromJson(response.data);
-      print(response.data);
-      return commandSuccess;
-    }on DioException catch(e){
-      throw Exception();
-    }
-  }
 
   Future<String> becomeDeliveryMan () async{
     try{
@@ -340,6 +332,63 @@ class ApiService {
     return listCommand;
   }
 
+  Future<Command> CreateCommand (CommandDTO commandDTO) async{
+    try{
+      var response = await _dio.post('/api/Commands/Create', data: commandDTO.toJson());
+      Command commandSuccess = Command.fromJson(response.data);
+      print(response.data);
+      return commandSuccess;
+    }on DioException catch(e){
+      throw Exception();
+    }
+  }
+
+//region Paiment Stripe Web & Mobile
+
+  //region Stripe Mobile
+
+  Future<void> initPaymentSheet(data) async {
+    try {
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          merchantDisplayName: 'Lapin Couvert',
+          paymentIntentClientSecret: data['clientSecret'],
+          customerId: data['customer'],
+          googlePay: const PaymentSheetGooglePay(merchantCountryCode: 'CA', testEnv: true),
+          applePay: const PaymentSheetApplePay(merchantCountryCode: 'CA'),
+        ),
+      );
+    } catch (e) {
+      //ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+      rethrow;
+    }
+  }
+
+  Future<Command?> MakePayment(BuildContext context, CommandDTO commandDTO, List<CartProductDTO> cartProducts) async {
+    try {
+      // Step 1: Validate cart products
+      var validationResponse = await ApiService().validateCartProducts(context, cartProducts);
+      if (validationResponse.toString() == "Le panier est valide") {
+        // Step 2: Get payment intent from Stripe
+        var paymentIntentResponse = await ApiService().getPaymentIntent(ApiService.finalAmount, ApiService.currency);
+        await ApiService().initPaymentSheet(paymentIntentResponse);
+
+        // Step 3: Present the payment sheet
+        await Stripe.instance.presentPaymentSheet();
+
+        // Step 4: If payment is successful, create the command
+        return await ApiService().CreateCommand(commandDTO);
+      }
+    } catch (e) {
+      print("Payment error: $e");
+    }
+    return null; // Return null if payment fails
+  }
+
+  //endregion
+
+  //region Stripe Web
+
   Future<void> PaiementRequest(BuildContext context, List<CartProductDTO> cartproducts) async {
     try {
       String? token = await FirebaseMessaging.instance.getToken();
@@ -361,67 +410,162 @@ class ApiService {
         var paymentIntentResponse = await ApiService().getPaymentIntent(ApiService.finalAmount, ApiService.currency);
         await ApiService().initPaymentSheet(paymentIntentResponse);
 
-        // Step 3: Present the payment sheet
-        await Stripe.instance.presentPaymentSheet();
+        try{
+          // Step 3: Present the payment sheet
+          var response = await Stripe.instance.presentPaymentSheet();
+          print(response);
+        }catch(e){
+          //ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : Instance de la feuille de transaction à échouée')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Le processus de paiement a été annulé.')));
+          rethrow;
+        }
 
-        // Step 4: If payment is successful, create the command
-        Command? commandSuccessDTO = await ApiService().CreateCommand(commandDTO);
-        ApiService.CartItemCount = 0;
-
-        if (commandSuccessDTO != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              //builder: (context) => OrderSuccessPage(commandSuccessDTO: commandSuccessDTO),
-              builder: (context) => OrderSuccessPage(sessionId: '',),
-            ),
-          );
+        try{
+          // Step 4: If payment is successful, create the command
+          Command? commandSuccessDTO = await ApiService().CreateCommand(commandDTO);
+          ApiService.CartItemCount = 0;
+          if (commandSuccessDTO != null) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                // CommandSuccessDTO was being passed as a parameter
+                builder: (context) => OrderSuccessPage(sessionId: '',),
+              ),
+            );
+          }
+        }catch(e){
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : Création lors de la commande')));
         }
       }
-    } catch (e) {
-      // Handle any errors (e.g., payment sheet dismissed by user)
-      print("Payment error: $e");
-
+    } on StripeException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Le processus de paiement a été annulé.")));
+      rethrow;
     }
   }
 
   Future<Map<String, dynamic>> getPaymentIntent(double totalPrice, String currency) async {
-    String? token = await FirebaseMessaging.instance.getToken();
-    List<String> tokens = [""];
-    tokens.add(token!);
-    CommandDTO commandDTO = CommandDTO(address, currency, totalPrice, phoneNum, tokens);
-    //dio.options.headers['Authorization'] = 'Bearer ${StripeService.secretKey}';
-    var response = await _dio.post('/api/Stripe/CreatePaymentIntent', data: commandDTO.toJson());
-    return response.data;
+    try {
+      String? token = await FirebaseMessaging.instance.getToken();
+      List<String> tokens = [""];
+      tokens.add(token!);
+      CommandDTO commandDTO = CommandDTO(
+          address, currency, totalPrice, phoneNum, tokens);
+      //dio.options.headers['Authorization'] = 'Bearer ${StripeService.secretKey}';
+      var response = await _dio.post(
+          '/api/Stripe/CreatePaymentIntent', data: commandDTO.toJson());
+      return response.data;
+    } catch (e) {
+      throw Exception();
+    }
   }
 
-  Future<void> initPaymentSheet(data) async {
+  Future<bool> verifyStripePaymentStatus(String sessionId) async {
     try {
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          merchantDisplayName: 'Lapin Couvert',
-          paymentIntentClientSecret: data['clientSecret'],
-          customerId: data['customer'],
-          googlePay: const PaymentSheetGooglePay(merchantCountryCode: 'CA', testEnv: true),
-          applePay: const PaymentSheetApplePay(merchantCountryCode: 'CA'),
+      var response = await _dio.get('/api/Stripe/VerifyCheckoutSession/$sessionId');
+
+      if (response.statusCode == 200) {
+        // Check the payment status from the response
+        final status = response.data['paymentStatus'];
+        return status == 'paid' || status == 'complete';
+      }
+      return false;
+    } on DioException catch (e) {
+      print('Failed to verify payment: $e');
+      return false;
+    }
+  }
+
+  Future<Command?> verifyPaymentAndCreateCommand(String sessionId) async {
+    try {
+      // Get token from persistent storage
+      final token = await AuthService.getToken();
+      if (token == null) {
+        print('Authentication token not found for payment verification');
+        throw Exception('Authentication token not found. Please log in again.');
+      }
+
+      // Set up request headers
+      _dio.options.headers['Authorization'] = 'Bearer $token';
+
+      // Log request details
+      print('Verifying payment session: $sessionId');
+      print('Using API endpoint: $BaseUrl/api/Stripe/VerifyCheckoutSession/$sessionId');
+
+      // Call API to verify checkout session and create command
+      final response = await _dio.get(
+        '/api/Stripe/VerifyCheckoutSession/$sessionId',
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+          validateStatus: (status) {
+            return status! < 500; // Accept all responses below 500 to handle server errors
+          },
         ),
       );
+
+      // Log the response
+      print('Payment verification response status: ${response.statusCode}');
+      print('Payment verification response data: ${response.data}');
+
+      // Check if the response is successful
+      if (response.statusCode == 200) {
+        try {
+          // Try to parse the command from the response
+          final command = Command.fromJson(response.data);
+
+          // Update cart count after successful order
+          ApiService.CartItemCount = 0;
+
+          return command;
+        } catch (parseError) {
+          print('Error parsing command from response: $parseError');
+          throw Exception('Invalid response format from server');
+        }
+      } else if (response.statusCode == 401) {
+        // Handle authentication errors
+        print('Authentication failed during payment verification');
+        throw Exception('Authentication expired. Please log in again.');
+      } else {
+        // Handle other error responses
+        String errorMessage = 'Payment verification failed';
+        if (response.data is Map && response.data['message'] != null) {
+          errorMessage = response.data['message'];
+        }
+        throw Exception(errorMessage);
+      }
+    } on DioException catch (e) {
+      // Handle Dio-specific errors
+      print('DioException during payment verification: ${e.message}');
+
+      if (e.type == DioExceptionType.connectionError) {
+        throw Exception('Connection error. Please check your internet connection.');
+      } else if (e.response != null) {
+        print('Error response status: ${e.response?.statusCode}');
+        print('Error response data: ${e.response?.data}');
+
+        if (e.response?.statusCode == 401) {
+          throw Exception('Your session has expired. Please log in again.');
+        } else {
+          String errorMsg = 'Server error';
+          if (e.response?.data is Map && e.response?.data['message'] != null) {
+            errorMsg = e.response?.data['message'];
+          }
+          throw Exception(errorMsg);
+        }
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
     } catch (e) {
-      //ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e')));
-      rethrow;
+      // Handle all other errors
+      print('Error during payment verification: $e');
+      throw Exception('Error verifying payment: $e');
     }
   }
 
-  Future<void> processPayment() async {
-    try {
-      var data = await getPaymentIntent(ApiService.finalAmount, currency);
-      await initPaymentSheet(data);
-      await Stripe.instance.presentPaymentSheet();
-    } catch (e) {
-      //ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur : $e')));
-      rethrow;
-    }
-  }
+  //endregion
+
+//endregion
 
   Future<List<Command>> getMyDeliveries() async {
 
@@ -493,7 +637,7 @@ class ApiService {
 
     try {
       if(imageFile != null){
-        await uploadImage(imageFile, context);
+          await uploadImage(imageFile, context);
       }
       var response = await _dio.post('/api/Account/ModifyProfile', data: profileData); // Backend API endpoint
 
@@ -505,6 +649,24 @@ class ApiService {
       rethrow;
     }
   }
+
+  Future<ProfileDTO> updateProfileWeb(ProfileModificationDTO profileData,XFile? imageFile, BuildContext context) async {
+
+    try {
+      if(imageFile != null){
+        await uploadImageWeb(imageFile);
+      }
+      var response = await _dio.post('/api/Account/ModifyProfile', data: profileData); // Backend API endpoint
+
+      ProfileDTO profile = ProfileDTO.fromJson(response.data);
+      return profile;
+
+    } catch (e) {
+      print('Error: $e');
+      rethrow;
+    }
+  }
+
 
   Future<void> uploadImage(File imageFile, BuildContext context) async {
 
@@ -527,6 +689,48 @@ class ApiService {
       }
     }
   }
+
+  Future<void> uploadImageWeb(XFile image) async {
+
+    // Convert XFile to Uint8List
+    Uint8List imageBytes = await image.readAsBytes();
+
+    // Get MIME type of the file
+    String? mimeType = lookupMimeType(image.name);
+
+    // Create MultipartFile from bytes (No need for File)
+    MultipartFile multipartFile = MultipartFile.fromBytes(
+      imageBytes,
+      filename: image.name,  // Set filename
+      contentType: mimeType != null ? MediaType.parse(mimeType) : null,
+    );
+
+    // Create FormData
+    FormData formData = FormData.fromMap({
+      "file": multipartFile,
+    });
+
+    try {
+      final response = await _dio.post(
+        '/api/Account/ModifyImage',
+        data: formData,
+        options: Options(
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        print('Upload successful');
+      } else {
+        print('Upload failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+    }
+  }
+
   Future<List<SuggestedProductDTO>> getSuggestedProducts() async {
     try {
       // Note: the endpoint is relative to baseUrl.
@@ -558,11 +762,6 @@ class ApiService {
       throw e;
     }
   }
-
-
-  /***
-   * The following is my implementation of the chat functionnality bayybay
-   */
 
   Future<void> markCommandInProgress(int commandId) async {
     try {
@@ -641,118 +840,6 @@ class ApiService {
     return await AuthService.getToken() ?? '';
   }
 
-  Future<bool> verifyStripePaymentStatus(String sessionId) async {
-    try {
-      var response = await _dio.get('/api/Stripe/VerifyPayment/$sessionId');
 
-      if (response.statusCode == 200) {
-        // Check the payment status from the response
-        final status = response.data['paymentStatus'];
-        return status == 'paid' || status == 'complete';
-      }
-      return false;
-    } on DioException catch (e) {
-      print('Failed to verify payment: $e');
-      return false;
-    }
-  }
-
-// Add this to handle web-specific payment flow
-  Future<void> processWebPayment(BuildContext context, List<CartProductDTO> cartProducts) async {
-    try {
-      // Step 1: Validate cart products
-      var validationResponse = await validateCartProducts(context, cartProducts);
-
-      if (validationResponse.toString() == "Le panier est valide") {
-        // Step 2: Create a Stripe checkout session
-        String? token = await FirebaseMessaging.instance.getToken();
-        List<String> tokens = token != null ? [token] : [];
-
-        CommandDTO commandDTO = CommandDTO(
-            address,
-            currency,
-            finalAmount,
-            phoneNum,
-            tokens
-        );
-
-        // Create a checkout session
-        var sessionResponse = await _dio.post(
-          '/api/Stripe/CreateCheckoutSession',
-          data: commandDTO.toJson(),
-        );
-
-        if (sessionResponse.statusCode == 200) {
-          // Get checkout URL from response
-          final sessionId = sessionResponse.data['id'];
-          final checkoutUrl = sessionResponse.data['url'];
-
-          // Open the checkout URL in a new tab
-          if (kIsWeb) {
-            html.window.open(checkoutUrl, '_blank');
-          }
-          // Store the session ID for later verification
-          // You can save this to local storage or pass it to the success page
-          LocalStorageService.saveSessionId(sessionId);
-        }
-      }
-    } catch (e) {
-      print("Web payment initialization error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to initialize payment: $e')),
-      );
-    }
-  }
-
-  // Add these methods to your ApiService class
-
-  Future<Command?> verifyPaymentAndCreateCommand(String sessionId) async {
-    try {
-      // Show debug info
-      print("Verifying payment with session ID: $sessionId");
-
-      // Make sure we have a valid token
-      final token = await AuthService.getToken();
-      if (token == null) {
-        throw Exception('Authentication token not found');
-      }
-
-      // Set up request headers
-      _dio.options.headers['Authorization'] = 'Bearer $token';
-
-      // Call API to verify checkout session and create command
-      final response = await _dio.get(
-        '/api/Stripe/VerifyCheckoutSession/$sessionId',
-      );
-
-      print("Verify checkout response: ${response.data}");
-
-      // Check response status
-      if (response.statusCode == 200) {
-        print("Payment verified and command created successfully");
-        return Command.fromJson(response.data);
-      } else {
-        throw Exception('Payment verification failed: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Payment verification error: $e');
-
-      // More detailed error logging
-      if (e is DioException && e.response != null) {
-        print('Response status: ${e.response?.statusCode}');
-        print('Response data: ${e.response?.data}');
-      }
-
-      throw e; // Re-throw to be handled by the caller
-    }
-  }
-
-// For debugging purposes, let's add a method to print API endpoint details
-  void printApiEndpoints() {
-    print("API Base URL: $BaseUrl");
-    print("Available endpoints:");
-    print("- Create Checkout Session: $BaseUrl/api/Stripe/CreateCheckoutSession");
-    print("- Verify Payment: $BaseUrl/api/Stripe/VerifyPayment/{sessionId}");
-  }
 }
 

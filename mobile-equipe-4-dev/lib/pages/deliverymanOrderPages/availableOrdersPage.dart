@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/pages/deliverymanOrderPages/availableDeliveryDetailPage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
 import '../../dto/payment.dart';
+import '../../generated/l10n.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/navbarWidgets/navBarDelivery.dart';
 import 'deliveriesListPage.dart';
@@ -36,7 +37,7 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
         isLoading = false;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec du chargement des commandes: $e')),
+        SnackBar(content: Text('${S.of(context).echecChargementCommandes} $e')),
       );
     }
   }
@@ -47,13 +48,13 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content: Text(
-                "Livraison assignée avec succès")), // Afficher un message de succès
+                S.of(context).livraisonAssigneAvecSuccs)), // Afficher un message de succès
       );
       // Actualiser la liste des commandes disponibles après l'assignation
       fetchAvailableCommands();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Échec de l\'assignation de la livraison: $e')),
+        SnackBar(content: Text(S.of(context).checDeLassignationDeLaLivraison + e.toString())),
       );
     }
   }
@@ -61,7 +62,7 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: 'Suivi des Commandes', centerTitle: true),
+      appBar: CustomAppBar(title: S.of(context).suiviDesCommandes, centerTitle: true),
       backgroundColor: Colors.white,
       body: buildBody(),
     );
@@ -86,14 +87,17 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
                       return Card(
                           child: ListTile(
                               title: Text(
-                                  'Commande #${command.commandNumber}'), // Numéro de commande
+                                  S.of(context).commande + command.commandNumber.toString()), // Numéro de commande
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                      'Livreur: ${command.deliveryManId ?? "Non Assigné"}'), // ID du livreur
+                                    command.deliveryManId ==null ?
+                                      S.of(context).livreurNonAssign:
+                                    S.of(context).livreur + command.deliveryManId.toString()
+                                  ), // ID du livreur
                                   Text(
-                                      'Point d\'Arrivée: ${command.arrivalPoint}'), // Point d'arrivée
+                                      S.of(context).pointDarrive + command.arrivalPoint.toString()), // Point d'arrivée
                                 ],
                               ),
                               trailing: ElevatedButton(
@@ -101,7 +105,7 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
                                   await assignDelivery(
                                       command.id); // Assigner la livraison
                                 },
-                                child: Text('Assigner'),
+                                child: Text(S.of(context).assigner),
                               ),
                               onTap: () {
                                 Navigator.push(
@@ -128,7 +132,7 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
                             fit: BoxFit.cover,
                           ),
                           Text(
-                            "Personne n'a commandé.",
+                            S.of(context).personneNaCommand,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -146,7 +150,7 @@ class _AvailableOrdersPageState extends State<AvailableOrdersPage> {
                   MaterialPageRoute(builder: (context) => DeliveriesListPage()),
                 );
               },
-              child: Text('Voir Mes Livraisons'),
+              child: Text(S.of(context).voirMesLivraisons),
             ),
           ],
         ),

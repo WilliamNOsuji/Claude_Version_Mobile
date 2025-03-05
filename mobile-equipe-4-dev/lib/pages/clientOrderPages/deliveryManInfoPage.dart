@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarDelivery.dart';
 import 'package:mobilelapincouvert/widgets/navbarWidgets/navBarNotDelivery.dart';
+import '../../generated/l10n.dart';
 import '../../services/api_service.dart';
 import '../../widgets/custom_app_bar.dart';
 
@@ -34,7 +35,7 @@ class _DeliveryManInfoPageState extends State<DeliveryManInfoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-          title: 'Information du livreur', centerTitle: true),
+          title: S.of(context).livreurInfo, centerTitle: true),
       body: buildBody(),
       bottomNavigationBar: ApiService.isDelivery ? navBarFloatingYesDelivery(context, 2, setState) : navBarFloatingNoDelivery(context, 2, setState),
     );
@@ -96,8 +97,8 @@ class _DeliveryManInfoPageState extends State<DeliveryManInfoPage> {
                         color: Colors.black87,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        'Disponible',
+                      child: Text(
+                        S.of(context).disponible,
                         style: TextStyle(color: Colors.white, fontSize: 14),
                       ),
                     ),

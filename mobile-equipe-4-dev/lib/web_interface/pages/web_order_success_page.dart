@@ -1,9 +1,14 @@
-import 'dart:html' as html;
+// lib/web_interface/pages/web_order_success_page.dart
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:mobilelapincouvert/dto/payment.dart';
 import 'package:mobilelapincouvert/pages/HomePage.dart';
 import 'package:mobilelapincouvert/services/api_service.dart';
+import 'package:mobilelapincouvert/services/web_api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:html' as html;
 
 class WebOrderSuccessPage extends StatefulWidget {
   final String sessionId;
@@ -17,78 +22,101 @@ class WebOrderSuccessPage extends StatefulWidget {
 class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
   bool _isLoading = true;
   bool _paymentSuccessful = false;
+  bool _isAlreadyProcessed = false;
   String _errorMessage = '';
   Command? _command;
+  String _sessionId = '';
 
   @override
   void initState() {
     super.initState();
-    _extractSessionIdAndVerify();
-
-    // Print debugging information
-    _printDebugInfo();
-  }
-
-  void _printDebugInfo() {
-    // Print URL and parameters for debugging
-    print("Current URL: ${html.window.location.href}");
-    print("URL Path: ${html.window.location.pathname}");
-    print("URL Search: ${html.window.location.search}");
-    print("URL Hash: ${html.window.location.hash}");
-
-    // Print API endpoints for reference
-    ApiService().printApiEndpoints();
-  }
-
-  void _extractSessionIdAndVerify() {
-    // Extract session_id from the URL if not provided in the constructor
-    String sessionId = widget.sessionId;
-
-    if (sessionId.isEmpty) {
-      // Get the full URL
-      final url = html.window.location.href;
-      print("Full URL for session extraction: $url");
-
-      // Try to extract session_id from search parameters
-      final searchParams = html.window.location.search;
-      if (searchParams!.isNotEmpty) {
-        final searchUri = Uri.parse(searchParams!);
-        sessionId = searchUri.queryParameters['session_id'] ?? '';
-      }
-
-      // If not found in search, try the hash fragment
-      if (sessionId.isEmpty) {
-        final hash = html.window.location.hash;
-        if (hash.isNotEmpty && hash.contains('session_id=')) {
-          final hashParts = hash.split('session_id=');
-          if (hashParts.length > 1) {
-            sessionId = hashParts[1].split('&')[0];
-          }
-        }
-      }
-
-      // Try a regex approach as last resort
-      if (sessionId.isEmpty) {
-        final regex = RegExp(r'session_id=([^&]+)');
-        final match = regex.firstMatch(url);
-        if (match != null && match.groupCount >= 1) {
-          sessionId = match.group(1) ?? '';
-        }
-      }
+    if(kIsWeb){
+      _extractSessionIdAndVerify();
     }
+  }
 
-    print("Extracted session ID: $sessionId");
+  Future<void> _extractSessionIdAndVerify() async {
+    try {
+      // First check if we have a sessionId passed to the widget
+      String sessionId = widget.sessionId;
 
-    // If we have a session ID, verify the payment
-    if (sessionId.isNotEmpty) {
-      // Call the API to verify payment
-      _verifyPayment(sessionId);
-    } else {
-      // No session ID found
+      // If empty, check if we have a stored session ID from the app initialization
+      if (sessionId.isEmpty) {
+        final prefs = await SharedPreferences.getInstance();
+        sessionId = prefs.getString('payment_session_id') ?? '';
+
+        // Clear the stored session ID to prevent reuse
+        if (sessionId.isNotEmpty) {
+          await prefs.remove('payment_session_id');
+        }
+      }
+
+      // If still empty, try to extract from URL
+      sessionId = WebApiService().ifEmptyExtractUrl(sessionId);
+
+      setState(() {
+        _sessionId = sessionId;
+      });
+
+      print("Final session ID: $sessionId");
+
+      // If we have a session ID, check if it's already been processed
+      if (sessionId.isNotEmpty) {
+        // Check if this session has already been processed
+        final prefs = await SharedPreferences.getInstance();
+        final processedSessions = prefs.getStringList('processed_payment_sessions') ?? [];
+
+        if (processedSessions.contains(sessionId)) {
+          // This session has already been processed
+          print("Session already processed: $sessionId");
+
+          setState(() {
+            _isLoading = false;
+            _paymentSuccessful = true;
+            _isAlreadyProcessed = true;
+          });
+
+          // Remove the session_id from URL (to prevent refreshes creating duplicates)
+          if (kIsWeb) {
+            _replaceUrlWithoutSessionId();
+          }
+        } else {
+          await _verifyPayment(sessionId);
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'No session ID found. Unable to verify payment.';
+        });
+      }
+    } catch (e) {
+      print("Error in session ID extraction: $e");
       setState(() {
         _isLoading = false;
-        _errorMessage = 'No session ID found in URL';
+        _errorMessage = 'Error processing payment: $e';
       });
+    }
+  }
+
+  void _replaceUrlWithoutSessionId() {
+    try {
+      final uri = html.window.location.href;
+      final uriObj = Uri.parse(uri);
+      final queryParams = Map<String, String>.from(uriObj.queryParameters);
+      queryParams.remove('session_id');
+
+      final newUri = Uri(
+        scheme: uriObj.scheme,
+        host: uriObj.host,
+        port: uriObj.port,
+        path: uriObj.path,
+        queryParameters: queryParams.isEmpty ? null : queryParams,
+        fragment: uriObj.fragment,
+      );
+
+      html.window.history.replaceState({}, '', newUri.toString());
+    } catch (e) {
+      print("Error replacing URL: $e");
     }
   }
 
@@ -99,18 +127,36 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
       // Call the API service to verify the payment and create command
       final command = await ApiService().verifyPaymentAndCreateCommand(sessionId);
 
-      // If verification and command creation successful, update the state
-      setState(() {
-        _isLoading = false;
-        _paymentSuccessful = true;
-        _command = command;
-      });
+      // Store this session ID as processed
+      if (command != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final processedSessions = prefs.getStringList('processed_payment_sessions') ?? [];
+        if (!processedSessions.contains(sessionId)) {
+          processedSessions.add(sessionId);
+          await prefs.setStringList('processed_payment_sessions', processedSessions);
+        }
+      }
+
+      // Remove the session_id from URL
+      if (kIsWeb) {
+        _replaceUrlWithoutSessionId();
+      }
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _paymentSuccessful = true;
+          _command = command;
+        });
+      }
     } catch (e) {
       print("Payment verification error: $e");
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Payment verification failed: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Payment verification failed: $e';
+        });
+      }
     }
   }
 
@@ -121,7 +167,7 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
       appBar: AppBar(
         title: Text(
           _isLoading ? 'Processing Payment...' :
-          (_paymentSuccessful ? 'Payment Successful!' : 'Payment Issue'),
+          (_paymentSuccessful ? 'Payment Successful!' : 'Payment Status'),
         ),
         centerTitle: true,
         backgroundColor: _paymentSuccessful ? Colors.green : Colors.blue,
@@ -144,6 +190,14 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
             'Verifying your payment...',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
           ),
+          if (_sessionId.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                'Session ID: $_sessionId',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ),
         ],
       ),
     );
@@ -174,13 +228,78 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
           ),
           SizedBox(height: 16),
           Text(
-            'Your delicious food is being prepared and will arrive soon.',
+            _isAlreadyProcessed
+                ? 'Your order was already processed. We\'re preparing your delicious food!'
+                : 'Your order has been processed successfully. We\'re preparing your delicious food!',
             style: TextStyle(
               fontSize: 18,
               color: Colors.grey[700],
             ),
             textAlign: TextAlign.center,
           ),
+          SizedBox(height: 24),
+
+          // Order details if available
+          if (_command != null) ...[
+            Card(
+              elevation: 4,
+              margin: EdgeInsets.symmetric(vertical: 16),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order Details',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Divider(),
+                    _buildOrderDetailRow('Order Number', '${_command!.commandNumber}'),
+                    _buildOrderDetailRow('Delivery Address', _command!.arrivalPoint),
+                    _buildOrderDetailRow('Total', '${_command!.totalPrice} ${_command!.currency}'),
+                    _buildOrderDetailRow('Contact Phone', _command!.clientPhoneNumber),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          if (_isAlreadyProcessed && _command == null) ...[
+            Card(
+              elevation: 4,
+              margin: EdgeInsets.symmetric(vertical: 16),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Order Information',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Divider(),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        'This order has already been processed. For order details, please check your order history or contact customer support.',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
           SizedBox(height: 32),
           ElevatedButton(
             onPressed: () {
@@ -198,8 +317,38 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
               ),
             ),
             child: Text(
-              'Back to Home',
+              'Continue Shopping',
               style: TextStyle(fontSize: 16, color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrderDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 140,
+            child: Text(
+              label + ':',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+              ),
             ),
           ),
         ],
@@ -217,7 +366,7 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
             Icon(Icons.error_outline, size: 80, color: Colors.red),
             SizedBox(height: 24),
             Text(
-              'Payment Verification Failed',
+              'Payment Verification Issue',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -232,6 +381,28 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 32),
+            if (_sessionId.isNotEmpty) ...[
+              Text(
+                'Session ID: $_sessionId',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              SizedBox(height: 16),
+            ],
+            ElevatedButton(
+              onPressed: () {
+                if (_sessionId.isNotEmpty) {
+                  _verifyPayment(_sessionId);
+                } else {
+                  _extractSessionIdAndVerify();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text('Try Again'),
+            ),
+            SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
                 Navigator.pushAndRemoveUntil(
@@ -241,16 +412,10 @@ class _WebOrderSuccessPageState extends State<WebOrderSuccessPage> {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
+                backgroundColor: Colors.grey,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
-              child: Text(
-                'Return to Home',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
+              child: Text('Return to Home'),
             ),
           ],
         ),

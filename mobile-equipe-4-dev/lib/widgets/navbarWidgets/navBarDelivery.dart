@@ -111,7 +111,7 @@ Widget navBarFloatingYesDelivery(
                     try {
                       List<CartProductDTO> response = await ApiService()
                           .getCartProducts(token, ApiService.clientId);
-                      Navigator.pushReplacement(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) =>

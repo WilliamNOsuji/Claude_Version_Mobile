@@ -1,9 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobilelapincouvert/dto/auth.dart';
 import 'package:mobilelapincouvert/pages/clientProfilePages/profile_edit_Page.dart';
 import 'package:mobilelapincouvert/models/colors.dart';
+import '../../generated/l10n.dart';
 import '../../services/api_service.dart';
 import '../../services/auth_service.dart';
+import '../../web_interface/pages/web_home_page.dart';
+import '../../web_interface/pages/web_profile_page.dart';
 import '../../widgets/custom_app_bar.dart';
 import '../../widgets/navbarWidgets/navBarDelivery.dart';
 import '../../widgets/navbarWidgets/navBarNotDelivery.dart';
@@ -20,7 +24,7 @@ ProfileDTO? profile;
 class _ProfilePageState extends State<ProfilePage> {
   String _selectedStatus = 'Inactif';
 
- void getProfileInfo() async {
+  void getProfileInfo() async {
 
    //setState(() { profile = null;});
 
@@ -52,7 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: 'Profil',
+        title: S.of(context).profil,
         centerTitle: false,
         backgroundColor: Colors.white,
       ),
@@ -65,7 +69,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget buildBody() {
     return Stack(
-      children: [SingleChildScrollView(
+      children: [
+        SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
@@ -90,7 +95,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      profile != null ? profile!.userName : 'chargement...',
+                      profile != null ? profile!.userName : S.of(context).chargement,
                       style: TextStyle(
                         color: AppColors().black(),
                         fontSize: 16,
@@ -99,7 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     SizedBox(height: 8),
                     Text(
-                      profile != null ? '${profile!.firstName} ${profile!.lastName}' : 'chargement...',
+                      profile != null ? '${profile!.firstName} ${profile!.lastName}' : S.of(context).chargement,
                       style: TextStyle(
                         color: AppColors().black(),
                         fontSize: 16,
@@ -118,11 +123,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                         PopupMenuItem<String>(
                           value: 'Inactif',
-                          child: Text('Inactif'),
+                          child: Text(S.of(context).inactif),
                         ),
                         PopupMenuItem<String>(
                           value: 'Actif',
-                          child: Text('Actif'),
+                          child: Text(S.of(context).actif),
                         ),
 
                       ],
@@ -168,7 +173,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'En mode livreur',
+                      S.of(context).enModeLivreur,
                       style: TextStyle(
                         color: Color(0xFF6A6A6A),
                         fontSize: 15,
@@ -191,8 +196,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       ) :
                       Text(
                         !profile!.isDeliveryMan
-                            ? 'Devenir livreur'
-                            : 'Démissionner',
+                            ? S.of(context).devenirLivreur
+                            : S.of(context).dmissionner,
                         style: TextStyle(
                           color: Color(0xFF040926),
                           fontSize: 14,
@@ -220,7 +225,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Paramètres',
+                      S.of(context).paramtres,
                       style: TextStyle(
                         color: Color(0xFF787878),
                         fontSize: 15,
@@ -236,7 +241,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: Icon(Icons.settings, color: Colors.white),
                       ),
                       title: Text(
-                        'Modifier mon profil',
+                        S.of(context).modifierMonProfil,
                         style: TextStyle(
                           color: Color(0xFF040926),
                           fontSize: 14,
@@ -266,7 +271,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Icon(Icons.notifications, color: Colors.blue),
                   ),
                   title: Text(
-                    'Notifications',
+                    S.of(context).notifications,
                     style: TextStyle(
                       color: Color(0xFF040926),
                       fontSize: 14,
@@ -286,7 +291,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Icon(Icons.info, color: Colors.white),
                   ),
                   title: Text(
-                    'À propos',
+                    S.of(context).propos,
                     style: TextStyle(
                       color: Color(0xFF040926),
                       fontSize: 14,
@@ -306,7 +311,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     child: Icon(Icons.logout, color: Color(0xFFFD4911)),
                   ),
                   title: Text(
-                    'Déconnexion',
+                    S.of(context).dconnexion,
                     style: TextStyle(
                       color: Color(0xFFFD4911),
                       fontSize: 14,
@@ -337,7 +342,6 @@ class _ProfilePageState extends State<ProfilePage> {
             navBarFloatingNoDelivery(context, 3, setState) :
             navBarFloatingYesDelivery(context, 4, setState))
       ],
-
     );
   }
 
@@ -346,16 +350,16 @@ class _ProfilePageState extends State<ProfilePage> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Devenir Livreur'),
-            content: const Text(
-                'Vous allez être actif en tant que livreur et vous pourrez livrer des commandes aux clients.'),
+            title: Text(S.of(context).devenirLivreur),
+            content: Text(
+                S.of(context).vousAllezTreActifEnTantQueLivreurEtVous),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context); // Close dialog
                 },
-                child: const Text(
-                  'Annuler', style: TextStyle(color: Colors.blue),),
+                child: Text(
+                  S.of(context).annuler, style: TextStyle(color: Colors.blue),),
               ),
               TextButton(
                 onPressed: () async {
@@ -363,8 +367,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   getProfileInfo();
                   Navigator.pop(context); // Close dialog
                 },
-                child: const Text(
-                  'Commencer', style: TextStyle(color: Colors.blue),),
+                child: Text(
+                  S.of(context).commencer, style: TextStyle(color: Colors.blue),),
               ),
             ],
           );
@@ -377,16 +381,16 @@ class _ProfilePageState extends State<ProfilePage> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Devenir Livreur'),
-            content: const Text(
-                'Vous n\'allez plus pouvoir être actif en tant que livreur et vous ne pourrez plus livrer des commandes aux clients.'),
+            title: Text(S.of(context).devenirLivreur),
+            content: Text(
+                S.of(context).vousNallezPlusPouvoirTreActifEnTantQueLivreur),
             actions: [
               TextButton(
                 onPressed: () {
                   Navigator.pop(context); // Close dialog
                 },
-                child: const Text(
-                  'Annuler', style: TextStyle(color: Colors.blue),),
+                child: Text(
+                  S.of(context).annuler, style: TextStyle(color: Colors.blue),),
               ),
               TextButton(
                 onPressed: () async {
@@ -394,8 +398,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   getProfileInfo();
                   Navigator.pop(context); // Close dialog
                 },
-                child: const Text(
-                  'Demmissioner', style: TextStyle(color: Colors.red),),
+                child: Text(
+                  S.of(context).demmissioner, style: TextStyle(color: Colors.red),),
               ),
             ],
           );

@@ -277,19 +277,25 @@ class LeTiroirState extends State<LeTiroir> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () async {
-                        var response = await ApiService()
-                            .validateCartProducts(context, listeCartProducts);
+                        if(listeCartProducts.length > 0){
+                          var response = await ApiService()
+                              .validateCartProducts(context, listeCartProducts);
 
-                        if (response.toString() == "Le panier est valide") {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => CheckoutPage(
-                                      listCartProducts: listeCartProducts)));
-                        } else {
+                          if (response.toString() == "Le panier est valide") {
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => CheckoutPage(
+                                        listCartProducts: listeCartProducts)));
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(response.toString())));
+                          }
+                        }else{
                           ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(response.toString())));
+                              SnackBar(content: Text('Le panier est vide !')));
                         }
+
                       },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),

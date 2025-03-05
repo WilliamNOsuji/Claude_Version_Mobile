@@ -101,7 +101,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
                         showPaswordForm = !showPaswordForm;
                       });
                     },
-                    child: Text('Changer mon mot de passe'),
+                    child: Text(S.of(context).changePassword),
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.green,
                       shape: RoundedRectangleBorder(
@@ -178,7 +178,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           controller.clear();
-          return 'Please enter your $label';
+          return '${S.of(context).changePassword} $label';
         }
         return null;
       },
@@ -206,7 +206,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Please enter your $label';
+          return '${S.of(context).enterYour} $label';
         }
         return null;
       },
@@ -238,8 +238,9 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
             _passwordController.text,
             _oldPasswordController.text
         );
+
         // Call the API to update the profile
-       ProfileDTO newProfileInfoResult = await ApiService().updateProfile(profileData,_newProfileImage, context);
+        ProfileDTO newProfileInfoResult = await ApiService().updateProfile(profileData,_newProfileImage, context);
 
         Navigator.push(
           context,
@@ -250,7 +251,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profile updated successfully!')),
+          SnackBar(content: Text(S.of(context).profileUpdated)),
         );
       } catch (e) {
         setState(() {
@@ -258,7 +259,7 @@ class _ProfileEditPageState extends State<ProfileEditPage> {
         });
         print('Error updating profile: $e');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating profile! Please try again.')),
+          SnackBar(content: Text(S.of(context).profileUpdatedError)),
         );
       }
     }

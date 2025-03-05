@@ -1,11 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'dart:async';
 import 'package:mobilelapincouvert/dto/vote.dart';
+import 'package:mobilelapincouvert/web_interface/pages/web_suggestion_page.dart';
 import '../../services/api_service.dart';
 import '../generated/l10n.dart';
 import 'package:intl/intl.dart';
 
+import '../web_interface/pages/web_home_page.dart';
 import '../widgets/custom_app_bar.dart';
 
 class SuggestionPage extends StatefulWidget {
@@ -40,67 +43,26 @@ class _SuggestionPageState extends State<SuggestionPage> {
     }
   }
 
-  Future<void> _postVoteFor(int index) async {
-    int suggestedProductId = suggestions[index].id;
-    try {
-      await ApiService().voteFor(suggestedProductId);
-      await _fetchSuggestions();
-    } catch (e) {
-      print('Failed to post vote: $e');
-    }
-  }
-
-  Future<void> _postVoteAgainst(int index) async {
-    int suggestedProductId = suggestions[index].id;
-    try {
-      await ApiService().voteAgainst(suggestedProductId);
-      await _fetchSuggestions();
-    } catch (e) {
-      print('Failed to post vote: $e');
-    }
-  }
-
   void _likeProduct(int index) async {
     final current = suggestions[index];
-    // Determine the new vote status.
-    final newVote = current.userVote == "For" ? null : "For";
-    // Create a new instance with the updated vote.
-    final updatedProduct = SuggestedProductDTO(
-      id: current.id,
-      name: current.name,
-      photo: current.photo,
-      finishDate: current.finishDate,
-      userVote: newVote,
-    );
-    setState(() {
-      suggestions[index] = updatedProduct;
-    });
+    current.userVote = current.userVote == "For" ? null : "For";
     try {
       await ApiService().voteFor(current.id);
+      setState(() {});
     } catch (e) {
       print("Vote for failed: $e");
-      // Optionally, revert the update here if the API call fails.
+
     }
   }
 
   void _dislikeProduct(int index) async {
     final current = suggestions[index];
-    final newVote = current.userVote == "Against" ? null : "Against";
-    final updatedProduct = SuggestedProductDTO(
-      id: current.id,
-      name: current.name,
-      photo: current.photo,
-      finishDate: current.finishDate,
-      userVote: newVote,
-    );
-    setState(() {
-      suggestions[index] = updatedProduct;
-    });
+    current.userVote = current.userVote == "Against" ? null : "Against";
     try {
       await ApiService().voteAgainst(current.id);
+      setState(() {});
     } catch (e) {
       print("Vote against failed: $e");
-      // Optionally, revert the update here if the API call fails.
     }
   }
 
@@ -108,9 +70,9 @@ class _SuggestionPageState extends State<SuggestionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return kIsWeb ? WebSuggestionPage(): Scaffold(
       appBar: CustomAppBar(
-        title: "Vote",
+        title: S.of(context).voteAppBarTitle,
         centerTitle: true,
         backgroundColor: Colors.white,
         backPage: true,
@@ -164,7 +126,6 @@ class _SuggestionPageState extends State<SuggestionPage> {
                       fit: BoxFit.cover,
                     ),
                   ),
-                  // Product details & countdown
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -193,7 +154,6 @@ class _SuggestionPageState extends State<SuggestionPage> {
                     ),
                   ),
                   const Divider(height: 1),
-                  // Action buttons
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Row(
@@ -244,7 +204,6 @@ class _CountdownTimerState extends State<CountdownTimer> {
   @override
   void initState() {
     super.initState();
-    // Assign the timer first, then calculate the time left.
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _calculateTimeLeft();
     });
@@ -268,9 +227,9 @@ class _CountdownTimerState extends State<CountdownTimer> {
     final minutes = duration.inMinutes.remainder(60);
     final seconds = duration.inSeconds.remainder(60);
     if (days > 0) {
-      return '$days jours, $hours heures, $minutes minutes, $seconds secondes';
+      return '$days ${S.of(context).countdownDays}, $hours ${S.of(context).countdownHours}, $minutes ${S.of(context).countdownMinutes}';
     } else {
-      return '$hours heures, $minutes minutes, $seconds secondes';
+      return '$hours ${S.of(context).countdownHours}, $minutes ${S.of(context).countdownMinutes}, $seconds ${S.of(context).countdownSeconds}';
     }
   }
 
